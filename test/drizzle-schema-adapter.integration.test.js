@@ -5,7 +5,6 @@ const { drizzle } = require('drizzle-orm/node-postgres');
 const { integer, pgTable, varchar } = require('drizzle-orm/pg-core');
 const { IdentifierCasing, extractCanonicalSchema } = require('../lib');
 const { connect } = require('./lib/park-database');
-const { runPsql } = require('./lib/psql');
 
 const casingProbe = pgTable('casing_probe', {
   pitchId: integer(),
@@ -30,10 +29,10 @@ const createdColumnsQuery = `
 const canonicalProbe = () =>
   extractCanonicalSchema({ casingProbe }, { casing: IdentifierCasing.SnakeCase }).tables.get('casingProbe');
 
-const copyStatement = (table, rows) => {
+const insertStatement = (table) => {
   const columns = table.columns.map((column) => column.name).join(', ');
-  const data = rows.map((row) => row.join('\t')).join('\n');
-  return `COPY ${table.name} (${columns}) FROM stdin;\n${data}\n\\.\n`;
+  const placeholders = table.columns.map((column, index) => `$${index + 1}`).join(', ');
+  return `INSERT INTO ${table.name} (${columns}) VALUES (${placeholders})`;
 };
 
 describe('drizzle schema adapter', () => {
@@ -64,7 +63,7 @@ describe('drizzle schema adapter', () => {
     it('names columns as a snake case drizzle instance names them', async () => {
       await db.insert(casingProbe).values({ pitchId: 1, ownerName: 'alice', explicitlyNamed: 10 });
 
-      runPsql(copyStatement(canonicalProbe(), [[2, 'betty', 20]]));
+      await client.query(insertStatement(canonicalProbe()), [2, 'betty', 20]);
 
       const rows = await db.select().from(casingProbe).orderBy(asc(casingProbe.pitchId));
       deq(rows, [
