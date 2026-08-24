@@ -20,7 +20,7 @@ document is the specification; this file tells you how to work through it.
   S12 encodes the escaping rules as a test table before the serialiser exists. For other
   stories, write the acceptance-criteria tests early enough that they drive the design
   of the code, not merely confirm it.
-- **Finish each story cleanly**: `npm run format`, `npm run lint`, `npm run build`,
+- **Finish each story cleanly**: `npm run format`, `npm run lint`, `npm run typecheck`,
   `npm test` (and the integration suite when the story touches a sink or the adapter)
   all green. One commit (or one small series) per story, message prefixed with the
   story id, e.g. `S07: value generator primitives`.
