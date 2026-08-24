@@ -24,8 +24,12 @@ document is the specification; this file tells you how to work through it.
   `npm test` (and the integration suite when the story touches a sink or the adapter)
   all green. One commit (or one small series) per story, message prefixed with the
   story id, e.g. `S07: value generator primitives`.
-- **Track progress** by maintaining a checklist at the top of DESIGN.md's §7 (a simple
-  `- [x] S01` list). Update it as part of each story's commit.
+- **Track progress in the issues.** Every story is an issue in
+  `cressie176/drizzle-super-seed`, and story `SNN` is issue `#NN`. Tick each task as you
+  complete it, tick the definition-of-done boxes as they are met, and close the issue as
+  the last act of the story. DESIGN.md is a local working document and is not committed,
+  so the issue is the only record anyone else can see; keep it current as you go rather
+  than reconstructing it at the end.
 
 ## When to stop and ask the maintainer
 
