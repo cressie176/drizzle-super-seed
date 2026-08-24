@@ -389,8 +389,8 @@ describe('drizzle schema adapter', () => {
       (table) => [primaryKey({ columns: [table.year, table.quarter] })],
     );
 
-    const bookings = pgTable(
-      'bookings',
+    const seasonBookings = pgTable(
+      'season_bookings',
       {
         id: integer('id').primaryKey(),
         seasonYear: integer('season_year').notNull(),
@@ -404,55 +404,55 @@ describe('drizzle schema adapter', () => {
       ],
     );
 
-    it('rejects a composite foreign key', () => {
-      throws(() => extractCanonicalSchema({ seasons, bookings }), {
+    it('rejects a composite foreign key, naming it as the schema declares it', () => {
+      throws(() => extractCanonicalSchema({ seasons, seasonBookings }), {
         name: 'UnsupportedRelationshipError',
         message:
-          'Table bookings has a composite foreign key on columns season_year, season_quarter. ' +
+          'Table seasonBookings has a composite foreign key on columns seasonYear, seasonQuarter. ' +
           'Replace it with single column foreign keys, or leave the table out of the schema passed to generate.',
-        table: 'bookings',
-        columns: ['season_year', 'season_quarter'],
+        table: 'seasonBookings',
+        columns: ['seasonYear', 'seasonQuarter'],
       });
     });
   });
 
   describe('incomplete schemas', () => {
-    it('rejects a foreign key to a table missing from the schema', () => {
+    it('rejects a foreign key to a table missing from the schema, naming the absent table as the database does', () => {
       throws(() => extractCanonicalSchema({ holidayHomes: parkSchema.holidayHomes }), {
         name: 'IncompleteSchemaError',
         message:
-          'Column holiday_homes.pitch_id references table pitches, which is missing from the schema. ' +
-          'Add pitches to the schema passed to generate, or leave holiday_homes out of it.',
-        table: 'holiday_homes',
-        column: 'pitch_id',
+          'Column holidayHomes.pitchId references database table pitches, which is missing from the schema. ' +
+          'Add the export which declares pitches to the schema passed to generate, or leave holidayHomes out of it.',
+        table: 'holidayHomes',
+        column: 'pitchId',
         referencedTable: 'pitches',
       });
     });
   });
 
   describe('missing primary keys', () => {
-    it('rejects a table drizzle-super-seed cannot reference rows of', () => {
-      const audits = pgTable('audits', { note: integer('note') });
-      throws(() => extractCanonicalSchema({ audits }), {
+    it('rejects a table drizzle-super-seed cannot reference rows of, naming it as the schema declares it', () => {
+      const auditEntries = pgTable('audit_entries', { note: integer('note') });
+      throws(() => extractCanonicalSchema({ auditEntries }), {
         name: 'MissingPrimaryKeyError',
         message:
-          'Table audits has no primary key, which drizzle-super-seed needs to reference its rows. ' +
+          'Table auditEntries has no primary key, which drizzle-super-seed needs to reference its rows. ' +
           'Give it one, or leave it out of the schema passed to generate.',
-        table: 'audits',
+        table: 'auditEntries',
       });
     });
   });
 
   describe('unsupported column types', () => {
-    it('rejects a column drizzle-super-seed cannot generate values for', () => {
-      const events = pgTable('events', { duration: interval('duration') });
-      throws(() => extractCanonicalSchema({ events }), {
+    it('rejects a column drizzle-super-seed cannot generate values for, naming it as the schema declares it', () => {
+      const siteEvents = pgTable('site_events', { elapsed: interval('elapsed_time') });
+      throws(() => extractCanonicalSchema({ siteEvents }), {
         name: 'UnsupportedColumnTypeError',
         message:
-          'Column events.duration has unsupported drizzle column type PgInterval. ' +
+          'Column siteEvents.elapsed has unsupported drizzle column type PgInterval. ' +
           'Change it to a supported type, or leave its table out of the schema passed to generate.',
-        table: 'events',
-        column: 'duration',
+        table: 'siteEvents',
+        column: 'elapsed',
         columnType: 'PgInterval',
       });
     });

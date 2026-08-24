@@ -5,3 +5,6 @@ lcov.info
 
 # Design and implementation plan: a working document, deliberately not published.
 DESIGN.md
+
+# Deviations from DESIGN.md: a local working record, like the design document itself.
+DEVIATIONS.md
