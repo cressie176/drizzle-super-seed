@@ -6,8 +6,21 @@ describe('index', () => {
     deq(Object.keys(require('../lib')).sort(), [
       'ColumnKind',
       'IdentifierCasing',
+      'constant',
+      'derive',
       'extractCanonicalSchema',
+      'optional',
+      'pickFrom',
+      'randomBoolean',
+      'randomDateBetween',
+      'randomDecimalString',
+      'randomInteger',
+      'randomTimestampWithinYears',
+      'randomUuid',
+      'randomWords',
+      'sequence',
       'structuralDefault',
+      'unique',
     ]);
   });
 });

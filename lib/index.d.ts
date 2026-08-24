@@ -72,6 +72,7 @@ export interface RandomSource {
 
 export interface GenerationContext {
   random: RandomSource;
+  seed: number;
   row: Readonly<Record<string, unknown>>;
   parentRow?: Readonly<Record<string, unknown>>;
   rowIndex: number;
@@ -95,3 +96,37 @@ export type SchemaRules<TSchema> = {
     ? TableRules<TSchema[K]>
     : never;
 };
+
+export function constant<TValue>(value: TValue): ValueGenerator<TValue>;
+
+export function randomInteger(min: number, max: number): ValueGenerator<number>;
+
+export function randomDecimalString(min: number, max: number, scale: number): ValueGenerator<string>;
+
+export function randomBoolean(probabilityTrue?: number): ValueGenerator<boolean>;
+
+export function randomWords(options?: { minLength?: number; maxLength?: number }): ValueGenerator<string>;
+
+export function randomUuid(): ValueGenerator<string>;
+
+export function randomDateBetween(from: Date, to: Date): ValueGenerator<Date>;
+
+export function randomTimestampWithinYears(years: number): ValueGenerator<Date>;
+
+export function pickFrom<TValue>(items: readonly TValue[]): ValueGenerator<TValue>;
+
+export function optional<TValue>(
+  generator: ValueGenerator<TValue>,
+  nullProbability?: number,
+): ValueGenerator<TValue | null>;
+
+export function sequence<TValue>(build: (index: number) => TValue): ValueGenerator<TValue>;
+
+export function derive<TValue>(
+  build: (row: Readonly<Record<string, unknown>>, context: GenerationContext) => TValue,
+): ValueGenerator<TValue>;
+
+export function unique<TValue>(
+  generator: ValueGenerator<TValue>,
+  options?: { maxAttempts?: number },
+): ValueGenerator<TValue>;
