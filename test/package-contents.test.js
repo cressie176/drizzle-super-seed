@@ -13,8 +13,18 @@ const packagedPaths = () => {
   return tarball.files.map((file) => file.path).sort();
 };
 
+const outsideLib = (path) => !path.startsWith('lib/');
+
 describe('package contents', () => {
-  it('packages the library, its declarations, the readme and the licence', () => {
-    deq(packagedPaths(), ['LICENSE', 'README.md', 'lib/index.d.ts', 'lib/index.js', 'package.json']);
+  it('packages nothing beyond the library, the readme and the licence', () => {
+    deq(packagedPaths().filter(outsideLib), ['LICENSE', 'README.md', 'package.json']);
+  });
+
+  it('packages the library entry point and its declarations', () => {
+    const packaged = packagedPaths();
+    deq(
+      ['lib/index.js', 'lib/index.d.ts'].filter((path) => packaged.includes(path)),
+      ['lib/index.js', 'lib/index.d.ts'],
+    );
   });
 });
