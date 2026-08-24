@@ -1,5 +1,6 @@
 node_modules/
 coverage/
+lcov.info
 .DS_Store
 
 # Design and implementation plan: a working document, deliberately not published.
