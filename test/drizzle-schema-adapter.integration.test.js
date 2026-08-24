@@ -7,13 +7,13 @@ const { IdentifierCasing, extractCanonicalSchema } = require('../lib');
 const { connect } = require('./lib/park-database');
 
 const casingProbe = pgTable('casing_probe', {
-  pitchId: integer(),
+  pitchId: integer().primaryKey(),
   ownerName: varchar({ length: 20 }),
   explicitlyNamed: integer('explicit_name'),
 });
 
 const ddl = `CREATE TABLE casing_probe (
-  pitch_id INTEGER NOT NULL,
+  pitch_id INTEGER NOT NULL PRIMARY KEY,
   owner_name VARCHAR(20) NOT NULL,
   explicit_name INTEGER NOT NULL
 )`;

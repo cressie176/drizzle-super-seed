@@ -1,7 +1,7 @@
 const { describe, it } = require('node:test');
 const { deepEqual: deq, throws } = require('node:assert');
 const { relations } = require('drizzle-orm');
-const { integer, interval, pgTable, varchar } = require('drizzle-orm/pg-core');
+const { foreignKey, integer, interval, pgTable, primaryKey, varchar } = require('drizzle-orm/pg-core');
 const { ColumnKind, IdentifierCasing, extractCanonicalSchema } = require('../lib');
 const parkSchema = require('./lib/park-schema');
 
@@ -14,176 +14,235 @@ const column = (fields) => ({
   ...fields,
 });
 
-const table = (key, name, columns) => [
+const references = (columnName, referencedTableKey, referencedColumnName) => ({
+  columnName,
+  referencedTableKey,
+  referencedColumnName,
+});
+
+const table = (key, name, columns, { primaryKey, foreignKeys = [], uniqueConstraints = [] }) => [
   key,
   {
     key,
     name,
     columns,
-    primaryKey: [],
-    foreignKeys: [],
-    uniqueConstraints: [],
+    primaryKey,
+    foreignKeys,
+    uniqueConstraints,
     drizzleTable: parkSchema[key],
   },
 ];
 
 const expectedParkSchema = new Map([
-  table('parks', 'parks', [
-    column({
-      name: 'id',
-      propertyName: 'id',
-      kind: ColumnKind.Integer,
-      notNull: true,
-      hasDatabaseDefault: true,
-      isPrimaryKey: true,
-      sequenceOwned: true,
-      identityAlways: true,
-    }),
-    column({ name: 'name', propertyName: 'name', kind: ColumnKind.Text, notNull: true, maxLength: 120 }),
-    column({ name: 'region', propertyName: 'region', kind: ColumnKind.Text, notNull: true, maxLength: 40 }),
-    column({ name: 'opened_at', propertyName: 'openedAt', kind: ColumnKind.Date, notNull: true }),
-    column({ name: 'latitude', propertyName: 'latitude', kind: ColumnKind.Real }),
-    column({ name: 'amenities', propertyName: 'amenities', kind: ColumnKind.Json }),
-    column({
-      name: 'active',
-      propertyName: 'active',
-      kind: ColumnKind.Boolean,
-      notNull: true,
-      hasDatabaseDefault: true,
-    }),
-    column({
-      name: 'created_at',
-      propertyName: 'createdAt',
-      kind: ColumnKind.Timestamp,
-      notNull: true,
-      hasDatabaseDefault: true,
-      withTimezone: true,
-    }),
-  ]),
-  table('pitches', 'pitches', [
-    column({
-      name: 'id',
-      propertyName: 'id',
-      kind: ColumnKind.Integer,
-      notNull: true,
-      hasDatabaseDefault: true,
-      isPrimaryKey: true,
-      sequenceOwned: true,
-    }),
-    column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, notNull: true }),
-    column({ name: 'reference', propertyName: 'reference', kind: ColumnKind.Text, notNull: true, maxLength: 20 }),
-    column({ name: 'area_sqm', propertyName: 'areaSqm', kind: ColumnKind.Real }),
-    column({
-      name: 'has_electricity',
-      propertyName: 'hasElectricity',
-      kind: ColumnKind.Boolean,
-      notNull: true,
-      hasDatabaseDefault: true,
-    }),
-  ]),
-  table('owners', 'owners', [
-    column({
-      name: 'id',
-      propertyName: 'id',
-      kind: ColumnKind.Uuid,
-      notNull: true,
-      hasDatabaseDefault: true,
-      isPrimaryKey: true,
-    }),
-    column({ name: 'full_name', propertyName: 'fullName', kind: ColumnKind.Text, notNull: true, maxLength: 200 }),
-    column({ name: 'email', propertyName: 'email', kind: ColumnKind.Text, notNull: true, maxLength: 320 }),
-    column({ name: 'member_since', propertyName: 'memberSince', kind: ColumnKind.Date, notNull: true }),
-    column({
-      name: 'loyalty_points',
-      propertyName: 'loyaltyPoints',
-      kind: ColumnKind.BigInt,
-      notNull: true,
-      hasDatabaseDefault: true,
-    }),
-    column({ name: 'referred_by_owner_id', propertyName: 'referredByOwnerId', kind: ColumnKind.Uuid }),
-  ]),
-  table('holidayHomes', 'holiday_homes', [
-    column({
-      name: 'id',
-      propertyName: 'id',
-      kind: ColumnKind.BigInt,
-      notNull: true,
-      hasDatabaseDefault: true,
-      isPrimaryKey: true,
-      sequenceOwned: true,
-    }),
-    column({ name: 'pitch_id', propertyName: 'pitchId', kind: ColumnKind.Integer, notNull: true }),
-    column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, notNull: true }),
-    column({ name: 'previous_owner_id', propertyName: 'previousOwnerId', kind: ColumnKind.Uuid }),
-    column({ name: 'model', propertyName: 'model', kind: ColumnKind.Text, notNull: true }),
-    column({
-      name: 'purchase_price',
-      propertyName: 'purchasePrice',
-      kind: ColumnKind.Decimal,
-      precision: 10,
-      scale: 2,
-    }),
-    column({ name: 'specification', propertyName: 'specification', kind: ColumnKind.Json }),
-    column({ name: 'inspected_at', propertyName: 'inspectedAt', kind: ColumnKind.Timestamp, withTimezone: false }),
-  ]),
-  table('accessories', 'accessories', [
-    column({
-      name: 'id',
-      propertyName: 'id',
-      kind: ColumnKind.Integer,
-      notNull: true,
-      hasDatabaseDefault: true,
-      isPrimaryKey: true,
-      sequenceOwned: true,
-    }),
-    column({ name: 'holiday_home_id', propertyName: 'holidayHomeId', kind: ColumnKind.BigInt, notNull: true }),
-    column({ name: 'description', propertyName: 'description', kind: ColumnKind.Text, notNull: true }),
-    column({
-      name: 'quantity',
-      propertyName: 'quantity',
-      kind: ColumnKind.Integer,
-      notNull: true,
-      hasDatabaseDefault: true,
-    }),
-  ]),
-  table('lettings', 'lettings', [
-    column({
-      name: 'id',
-      propertyName: 'id',
-      kind: ColumnKind.Integer,
-      notNull: true,
-      hasDatabaseDefault: true,
-      isPrimaryKey: true,
-      sequenceOwned: true,
-      identityAlways: true,
-    }),
-    column({ name: 'holiday_home_id', propertyName: 'holidayHomeId', kind: ColumnKind.BigInt, notNull: true }),
-    column({ name: 'guest_name', propertyName: 'guestName', kind: ColumnKind.Text, notNull: true, maxLength: 200 }),
-    column({
-      name: 'status',
-      propertyName: 'status',
-      kind: ColumnKind.Enum,
-      notNull: true,
-      hasDatabaseDefault: true,
-      enumValues: ['pending', 'confirmed', 'cancelled'],
-    }),
-    column({ name: 'start_date', propertyName: 'startDate', kind: ColumnKind.Date, notNull: true }),
-    column({ name: 'end_date', propertyName: 'endDate', kind: ColumnKind.Date, notNull: true }),
-    column({ name: 'arrival_time', propertyName: 'arrivalTime', kind: ColumnKind.Time, notNull: true }),
-    column({
-      name: 'site_fee',
-      propertyName: 'siteFee',
-      kind: ColumnKind.Decimal,
-      notNull: true,
-      precision: 8,
-      scale: 2,
-    }),
-    column({ name: 'notes', propertyName: 'notes', kind: ColumnKind.Text }),
-  ]),
-  table('parkOwners', 'park_owners', [
-    column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, notNull: true }),
-    column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, notNull: true }),
-  ]),
+  table(
+    'parks',
+    'parks',
+    [
+      column({
+        name: 'id',
+        propertyName: 'id',
+        kind: ColumnKind.Integer,
+        notNull: true,
+        hasDatabaseDefault: true,
+        isPrimaryKey: true,
+        sequenceOwned: true,
+        identityAlways: true,
+      }),
+      column({ name: 'name', propertyName: 'name', kind: ColumnKind.Text, notNull: true, maxLength: 120 }),
+      column({ name: 'region', propertyName: 'region', kind: ColumnKind.Text, notNull: true, maxLength: 40 }),
+      column({ name: 'opened_at', propertyName: 'openedAt', kind: ColumnKind.Date, notNull: true }),
+      column({ name: 'latitude', propertyName: 'latitude', kind: ColumnKind.Real }),
+      column({ name: 'amenities', propertyName: 'amenities', kind: ColumnKind.Json }),
+      column({
+        name: 'active',
+        propertyName: 'active',
+        kind: ColumnKind.Boolean,
+        notNull: true,
+        hasDatabaseDefault: true,
+      }),
+      column({
+        name: 'created_at',
+        propertyName: 'createdAt',
+        kind: ColumnKind.Timestamp,
+        notNull: true,
+        hasDatabaseDefault: true,
+        withTimezone: true,
+      }),
+    ],
+    { primaryKey: ['id'] },
+  ),
+  table(
+    'pitches',
+    'pitches',
+    [
+      column({
+        name: 'id',
+        propertyName: 'id',
+        kind: ColumnKind.Integer,
+        notNull: true,
+        hasDatabaseDefault: true,
+        isPrimaryKey: true,
+        sequenceOwned: true,
+      }),
+      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, notNull: true }),
+      column({ name: 'reference', propertyName: 'reference', kind: ColumnKind.Text, notNull: true, maxLength: 20 }),
+      column({ name: 'area_sqm', propertyName: 'areaSqm', kind: ColumnKind.Real }),
+      column({
+        name: 'has_electricity',
+        propertyName: 'hasElectricity',
+        kind: ColumnKind.Boolean,
+        notNull: true,
+        hasDatabaseDefault: true,
+      }),
+    ],
+    { primaryKey: ['id'], foreignKeys: [references('park_id', 'parks', 'id')] },
+  ),
+  table(
+    'owners',
+    'owners',
+    [
+      column({
+        name: 'id',
+        propertyName: 'id',
+        kind: ColumnKind.Uuid,
+        notNull: true,
+        hasDatabaseDefault: true,
+        isPrimaryKey: true,
+      }),
+      column({ name: 'full_name', propertyName: 'fullName', kind: ColumnKind.Text, notNull: true, maxLength: 200 }),
+      column({ name: 'email', propertyName: 'email', kind: ColumnKind.Text, notNull: true, maxLength: 320 }),
+      column({ name: 'member_since', propertyName: 'memberSince', kind: ColumnKind.Date, notNull: true }),
+      column({
+        name: 'loyalty_points',
+        propertyName: 'loyaltyPoints',
+        kind: ColumnKind.BigInt,
+        notNull: true,
+        hasDatabaseDefault: true,
+      }),
+      column({ name: 'referred_by_owner_id', propertyName: 'referredByOwnerId', kind: ColumnKind.Uuid }),
+    ],
+    {
+      primaryKey: ['id'],
+      foreignKeys: [references('referred_by_owner_id', 'owners', 'id')],
+      uniqueConstraints: [['email']],
+    },
+  ),
+  table(
+    'holidayHomes',
+    'holiday_homes',
+    [
+      column({
+        name: 'id',
+        propertyName: 'id',
+        kind: ColumnKind.BigInt,
+        notNull: true,
+        hasDatabaseDefault: true,
+        isPrimaryKey: true,
+        sequenceOwned: true,
+      }),
+      column({ name: 'pitch_id', propertyName: 'pitchId', kind: ColumnKind.Integer, notNull: true }),
+      column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, notNull: true }),
+      column({ name: 'previous_owner_id', propertyName: 'previousOwnerId', kind: ColumnKind.Uuid }),
+      column({ name: 'model', propertyName: 'model', kind: ColumnKind.Text, notNull: true }),
+      column({
+        name: 'purchase_price',
+        propertyName: 'purchasePrice',
+        kind: ColumnKind.Decimal,
+        precision: 10,
+        scale: 2,
+      }),
+      column({ name: 'specification', propertyName: 'specification', kind: ColumnKind.Json }),
+      column({ name: 'inspected_at', propertyName: 'inspectedAt', kind: ColumnKind.Timestamp, withTimezone: false }),
+    ],
+    {
+      primaryKey: ['id'],
+      foreignKeys: [
+        references('pitch_id', 'pitches', 'id'),
+        references('owner_id', 'owners', 'id'),
+        references('previous_owner_id', 'owners', 'id'),
+      ],
+    },
+  ),
+  table(
+    'accessories',
+    'accessories',
+    [
+      column({
+        name: 'id',
+        propertyName: 'id',
+        kind: ColumnKind.Integer,
+        notNull: true,
+        hasDatabaseDefault: true,
+        isPrimaryKey: true,
+        sequenceOwned: true,
+      }),
+      column({ name: 'holiday_home_id', propertyName: 'holidayHomeId', kind: ColumnKind.BigInt, notNull: true }),
+      column({ name: 'description', propertyName: 'description', kind: ColumnKind.Text, notNull: true }),
+      column({
+        name: 'quantity',
+        propertyName: 'quantity',
+        kind: ColumnKind.Integer,
+        notNull: true,
+        hasDatabaseDefault: true,
+      }),
+    ],
+    { primaryKey: ['id'], foreignKeys: [references('holiday_home_id', 'holidayHomes', 'id')] },
+  ),
+  table(
+    'lettings',
+    'lettings',
+    [
+      column({
+        name: 'id',
+        propertyName: 'id',
+        kind: ColumnKind.Integer,
+        notNull: true,
+        hasDatabaseDefault: true,
+        isPrimaryKey: true,
+        sequenceOwned: true,
+        identityAlways: true,
+      }),
+      column({ name: 'holiday_home_id', propertyName: 'holidayHomeId', kind: ColumnKind.BigInt, notNull: true }),
+      column({ name: 'guest_name', propertyName: 'guestName', kind: ColumnKind.Text, notNull: true, maxLength: 200 }),
+      column({
+        name: 'status',
+        propertyName: 'status',
+        kind: ColumnKind.Enum,
+        notNull: true,
+        hasDatabaseDefault: true,
+        enumValues: ['pending', 'confirmed', 'cancelled'],
+      }),
+      column({ name: 'start_date', propertyName: 'startDate', kind: ColumnKind.Date, notNull: true }),
+      column({ name: 'end_date', propertyName: 'endDate', kind: ColumnKind.Date, notNull: true }),
+      column({ name: 'arrival_time', propertyName: 'arrivalTime', kind: ColumnKind.Time, notNull: true }),
+      column({
+        name: 'site_fee',
+        propertyName: 'siteFee',
+        kind: ColumnKind.Decimal,
+        notNull: true,
+        precision: 8,
+        scale: 2,
+      }),
+      column({ name: 'notes', propertyName: 'notes', kind: ColumnKind.Text }),
+    ],
+    {
+      primaryKey: ['id'],
+      foreignKeys: [references('holiday_home_id', 'holidayHomes', 'id')],
+      uniqueConstraints: [['holiday_home_id', 'start_date']],
+    },
+  ),
+  table(
+    'parkOwners',
+    'park_owners',
+    [
+      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, notNull: true }),
+      column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, notNull: true }),
+    ],
+    {
+      primaryKey: ['park_id', 'owner_id'],
+      foreignKeys: [references('park_id', 'parks', 'id'), references('owner_id', 'owners', 'id')],
+    },
+  ),
 ]);
 
 const namesOf = (canonical, key) => canonical.tables.get(key).columns.map((each) => each.name);
@@ -219,15 +278,47 @@ describe('drizzle schema adapter', () => {
     });
   });
 
+  describe('keys and constraints', () => {
+    const tableNamed = (key) => extractCanonicalSchema(parkSchema).tables.get(key);
+
+    it('reads a single column primary key from the column which declares it', () => {
+      deq(tableNamed('parks').primaryKey, ['id']);
+    });
+
+    it('reads a composite primary key from the table which declares it', () => {
+      deq(tableNamed('parkOwners').primaryKey, ['park_id', 'owner_id']);
+    });
+
+    it('reads a single column unique constraint from the column which declares it', () => {
+      deq(tableNamed('owners').uniqueConstraints, [['email']]);
+    });
+
+    it('reads a composite unique constraint from the table which declares it', () => {
+      deq(tableNamed('lettings').uniqueConstraints, [['holiday_home_id', 'start_date']]);
+    });
+
+    it('distinguishes two foreign keys to the same table by their column', () => {
+      deq(tableNamed('holidayHomes').foreignKeys, [
+        references('pitch_id', 'pitches', 'id'),
+        references('owner_id', 'owners', 'id'),
+        references('previous_owner_id', 'owners', 'id'),
+      ]);
+    });
+
+    it('resolves a self referencing foreign key to its own table', () => {
+      deq(tableNamed('owners').foreignKeys, [references('referred_by_owner_id', 'owners', 'id')]);
+    });
+  });
+
   describe('identifier casing', () => {
     const camelCasedProperties = pgTable('casing_probe', {
-      pitchId: integer(),
+      pitchId: integer().primaryKey(),
       ownerName: varchar({ length: 10 }),
       explicitlyNamed: integer('explicit_name'),
     });
 
     const snakeCasedProperties = pgTable('casing_probe', {
-      pitch_id: integer(),
+      pitch_id: integer().primaryKey(),
       explicitlyNamed: integer('explicitName'),
     });
 
@@ -246,8 +337,33 @@ describe('drizzle schema adapter', () => {
       deq(namesOf(canonical, 'probe'), ['pitchId', 'explicitName']);
     });
 
+    it('names key and constraint columns as it names the columns themselves', () => {
+      const seasons = pgTable(
+        'seasons',
+        {
+          startYear: integer().notNull(),
+          quarterNumber: integer().notNull(),
+          quarterLabel: varchar({ length: 8 }).unique(),
+        },
+        (table) => [primaryKey({ columns: [table.startYear, table.quarterNumber] })],
+      );
+      const canonical = extractCanonicalSchema({ seasons }, { casing: IdentifierCasing.SnakeCase });
+      deq(canonical.tables.get('seasons').primaryKey, ['start_year', 'quarter_number']);
+      deq(canonical.tables.get('seasons').uniqueConstraints, [['quarter_label']]);
+    });
+
+    it('names foreign key columns as it names the columns themselves', () => {
+      const parks = pgTable('parks', { parkId: integer().primaryKey() });
+      const pitches = pgTable('pitches', {
+        pitchId: integer().primaryKey(),
+        parkId: integer().references(() => parks.parkId),
+      });
+      const canonical = extractCanonicalSchema({ parks, pitches }, { casing: IdentifierCasing.SnakeCase });
+      deq(canonical.tables.get('pitches').foreignKeys, [references('park_id', 'parks', 'park_id')]);
+    });
+
     it('keeps a declared table name verbatim, whatever the casing', () => {
-      const holidayHomes = pgTable('holidayHomes', { pitchId: integer() });
+      const holidayHomes = pgTable('holidayHomes', { pitchId: integer().primaryKey() });
       const canonical = extractCanonicalSchema({ holidayHomes }, { casing: IdentifierCasing.SnakeCase });
       deq(canonical.tables.get('holidayHomes').name, 'holidayHomes');
     });
@@ -263,6 +379,67 @@ describe('drizzle schema adapter', () => {
         version: 3,
       };
       deq([...extractCanonicalSchema(schema).tables.keys()], ['parks']);
+    });
+  });
+
+  describe('unsupported relationships', () => {
+    const seasons = pgTable(
+      'seasons',
+      { year: integer('year').notNull(), quarter: integer('quarter').notNull() },
+      (table) => [primaryKey({ columns: [table.year, table.quarter] })],
+    );
+
+    const bookings = pgTable(
+      'bookings',
+      {
+        id: integer('id').primaryKey(),
+        seasonYear: integer('season_year').notNull(),
+        seasonQuarter: integer('season_quarter').notNull(),
+      },
+      (table) => [
+        foreignKey({
+          columns: [table.seasonYear, table.seasonQuarter],
+          foreignColumns: [seasons.year, seasons.quarter],
+        }),
+      ],
+    );
+
+    it('rejects a composite foreign key', () => {
+      throws(() => extractCanonicalSchema({ seasons, bookings }), {
+        name: 'UnsupportedRelationshipError',
+        message:
+          'Table bookings has a composite foreign key on columns season_year, season_quarter. ' +
+          'Replace it with single column foreign keys, or leave the table out of the schema passed to generate.',
+        table: 'bookings',
+        columns: ['season_year', 'season_quarter'],
+      });
+    });
+  });
+
+  describe('incomplete schemas', () => {
+    it('rejects a foreign key to a table missing from the schema', () => {
+      throws(() => extractCanonicalSchema({ holidayHomes: parkSchema.holidayHomes }), {
+        name: 'IncompleteSchemaError',
+        message:
+          'Column holiday_homes.pitch_id references table pitches, which is missing from the schema. ' +
+          'Add pitches to the schema passed to generate, or leave holiday_homes out of it.',
+        table: 'holiday_homes',
+        column: 'pitch_id',
+        referencedTable: 'pitches',
+      });
+    });
+  });
+
+  describe('missing primary keys', () => {
+    it('rejects a table drizzle-super-seed cannot reference rows of', () => {
+      const audits = pgTable('audits', { note: integer('note') });
+      throws(() => extractCanonicalSchema({ audits }), {
+        name: 'MissingPrimaryKeyError',
+        message:
+          'Table audits has no primary key, which drizzle-super-seed needs to reference its rows. ' +
+          'Give it one, or leave it out of the schema passed to generate.',
+        table: 'audits',
+      });
     });
   });
 
