@@ -3,6 +3,11 @@ const { deepEqual: deq } = require('node:assert');
 
 describe('index', () => {
   it('exports the public api', () => {
-    deq(Object.keys(require('../lib')).sort(), ['ColumnKind', 'IdentifierCasing', 'extractCanonicalSchema']);
+    deq(Object.keys(require('../lib')).sort(), [
+      'ColumnKind',
+      'IdentifierCasing',
+      'extractCanonicalSchema',
+      'structuralDefault',
+    ]);
   });
 });

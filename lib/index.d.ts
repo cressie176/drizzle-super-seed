@@ -1,3 +1,5 @@
+import type { PgTable } from 'drizzle-orm/pg-core';
+
 export enum ColumnKind {
   Integer = 'Integer',
   BigInt = 'BigInt',
@@ -59,3 +61,37 @@ export function extractCanonicalSchema(
   schema: Record<string, unknown>,
   options?: { casing?: IdentifierCasing },
 ): CanonicalSchema;
+
+export interface RandomSource {
+  next(): number;
+  intBetween(min: number, max: number): number;
+  chance(probability: number): boolean;
+  pick<T>(items: readonly T[]): T;
+  uuid(): string;
+}
+
+export interface GenerationContext {
+  random: RandomSource;
+  row: Readonly<Record<string, unknown>>;
+  parentRow?: Readonly<Record<string, unknown>>;
+  rowIndex: number;
+  priorSelfReferenceValues?: readonly unknown[];
+  lookups: Readonly<Record<string, unknown>>;
+  referenceDate: Date;
+}
+
+export type ValueGenerator<TValue> = (context: GenerationContext) => TValue;
+
+export const structuralDefault: unique symbol;
+
+export type ColumnRule<TValue> = ValueGenerator<TValue> | TValue | typeof structuralDefault;
+
+export type TableRules<TTable extends PgTable> = {
+  [K in keyof Required<TTable['$inferInsert']>]: ColumnRule<Required<TTable['$inferInsert']>[K]>;
+};
+
+export type SchemaRules<TSchema> = {
+  [K in keyof TSchema as TSchema[K] extends PgTable ? K : never]: TSchema[K] extends PgTable
+    ? TableRules<TSchema[K]>
+    : never;
+};
