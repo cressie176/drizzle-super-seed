@@ -249,10 +249,18 @@ describe('generation rules', () => {
 
     describe('structural defaults', () => {
       it('generates whole numbers for integer columns', () => {
-        const values = structuralValues('accessories', 'quantity', LARGE_SAMPLE);
+        const plan = planFor(shortCodeRules, { shortCodes: 1 }, { shortCodes });
+        const values = draw(entryFor(plan, 'shortCodes', 'id').generator, LARGE_SAMPLE);
 
         ok(values.every((value) => Number.isInteger(value) && value >= 0 && value <= 1_000_000));
-        ok(new Set(values).size > 1);
+        ok(values.some((value) => value > 900_000));
+      });
+
+      it('keeps within the range of a narrower integer column', () => {
+        const values = structuralValues('accessories', 'quantity', LARGE_SAMPLE);
+
+        ok(values.every((value) => Number.isInteger(value) && value >= 0 && value <= 32_767));
+        ok(values.some((value) => value > 30_000));
       });
 
       it('generates whole numbers for bigint columns', () => {

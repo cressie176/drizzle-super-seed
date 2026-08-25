@@ -1,5 +1,5 @@
 const { describe, it } = require('node:test');
-const { deepEqual: deq, throws } = require('node:assert');
+const { deepEqual: deq, equal: eq, throws } = require('node:assert');
 const { relations } = require('drizzle-orm');
 const {
   bigint,
@@ -11,11 +11,17 @@ const {
   numeric,
   pgTable,
   primaryKey,
+  smallint,
+  text,
   timestamp,
   varchar,
 } = require('drizzle-orm/pg-core');
 const { ColumnKind, IdentifierCasing, extractCanonicalSchema } = require('../lib');
 const parkSchema = require('./lib/park-schema');
+
+const SMALLINT_MAX = 32_767;
+const INTEGER_MAX = 2_147_483_647;
+const BIGINT_53_MAX = Number.MAX_SAFE_INTEGER;
 
 const column = (fields) => ({
   notNull: false,
@@ -55,6 +61,7 @@ const expectedParkSchema = new Map([
         propertyName: 'id',
         kind: ColumnKind.Integer,
         jsType: 'number',
+        maxValue: INTEGER_MAX,
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
@@ -109,12 +116,20 @@ const expectedParkSchema = new Map([
         propertyName: 'id',
         kind: ColumnKind.Integer,
         jsType: 'number',
+        maxValue: INTEGER_MAX,
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
         sequenceOwned: true,
       }),
-      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, jsType: 'number', notNull: true }),
+      column({
+        name: 'park_id',
+        propertyName: 'parkId',
+        kind: ColumnKind.Integer,
+        jsType: 'number',
+        maxValue: INTEGER_MAX,
+        notNull: true,
+      }),
       column({
         name: 'reference',
         propertyName: 'reference',
@@ -176,6 +191,7 @@ const expectedParkSchema = new Map([
         propertyName: 'loyaltyPoints',
         kind: ColumnKind.BigInt,
         jsType: 'number',
+        maxValue: BIGINT_53_MAX,
         notNull: true,
         hasDatabaseDefault: true,
       }),
@@ -201,12 +217,20 @@ const expectedParkSchema = new Map([
         propertyName: 'id',
         kind: ColumnKind.BigInt,
         jsType: 'number',
+        maxValue: BIGINT_53_MAX,
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
         sequenceOwned: true,
       }),
-      column({ name: 'pitch_id', propertyName: 'pitchId', kind: ColumnKind.Integer, jsType: 'number', notNull: true }),
+      column({
+        name: 'pitch_id',
+        propertyName: 'pitchId',
+        kind: ColumnKind.Integer,
+        jsType: 'number',
+        maxValue: INTEGER_MAX,
+        notNull: true,
+      }),
       column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, jsType: 'string', notNull: true }),
       column({ name: 'previous_owner_id', propertyName: 'previousOwnerId', kind: ColumnKind.Uuid, jsType: 'string' }),
       column({ name: 'model', propertyName: 'model', kind: ColumnKind.Text, jsType: 'string', notNull: true }),
@@ -245,6 +269,7 @@ const expectedParkSchema = new Map([
         propertyName: 'id',
         kind: ColumnKind.Integer,
         jsType: 'number',
+        maxValue: INTEGER_MAX,
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
@@ -255,6 +280,7 @@ const expectedParkSchema = new Map([
         propertyName: 'holidayHomeId',
         kind: ColumnKind.BigInt,
         jsType: 'number',
+        maxValue: BIGINT_53_MAX,
         notNull: true,
       }),
       column({
@@ -269,6 +295,7 @@ const expectedParkSchema = new Map([
         propertyName: 'quantity',
         kind: ColumnKind.Integer,
         jsType: 'number',
+        maxValue: SMALLINT_MAX,
         notNull: true,
         hasDatabaseDefault: true,
       }),
@@ -284,6 +311,7 @@ const expectedParkSchema = new Map([
         propertyName: 'id',
         kind: ColumnKind.Integer,
         jsType: 'number',
+        maxValue: INTEGER_MAX,
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
@@ -295,6 +323,7 @@ const expectedParkSchema = new Map([
         propertyName: 'holidayHomeId',
         kind: ColumnKind.BigInt,
         jsType: 'number',
+        maxValue: BIGINT_53_MAX,
         notNull: true,
       }),
       column({
@@ -344,7 +373,14 @@ const expectedParkSchema = new Map([
     'parkOwners',
     'park_owners',
     [
-      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, jsType: 'number', notNull: true }),
+      column({
+        name: 'park_id',
+        propertyName: 'parkId',
+        kind: ColumnKind.Integer,
+        jsType: 'number',
+        maxValue: INTEGER_MAX,
+        notNull: true,
+      }),
       column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, jsType: 'string', notNull: true }),
     ],
     {
@@ -405,6 +441,35 @@ describe('drizzle schema adapter', () => {
       deq(representationOf('bigIntAsNumber'), [ColumnKind.BigInt, 'number']);
       deq(representationOf('bigIntAsBigInt'), [ColumnKind.BigInt, 'bigint']);
       deq(representationOf('bigSerialAsBigInt'), [ColumnKind.BigInt, 'bigint']);
+    });
+  });
+
+  describe('value ranges', () => {
+    const rangeProbe = pgTable('range_probe', {
+      id: integer('id').primaryKey(),
+      small: smallint('small'),
+      big: bigint('big', { mode: 'number' }),
+      bigger: bigint('bigger', { mode: 'bigint' }),
+      description: text('description'),
+    });
+
+    const largestValueOf = (propertyName) =>
+      extractCanonicalSchema({ rangeProbe })
+        .tables.get('rangeProbe')
+        .columns.find((column) => column.propertyName === propertyName).maxValue;
+
+    it('records the largest value each integer column type holds', () => {
+      eq(largestValueOf('small'), 32_767);
+      eq(largestValueOf('id'), 2_147_483_647);
+    });
+
+    it('records a bigint column largest value in the representation it inserts', () => {
+      eq(largestValueOf('big'), Number.MAX_SAFE_INTEGER);
+      eq(largestValueOf('bigger'), 9_223_372_036_854_775_807n);
+    });
+
+    it('records no largest value for a column which is not an integer', () => {
+      eq(largestValueOf('description'), undefined);
     });
   });
 

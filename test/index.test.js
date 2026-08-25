@@ -9,6 +9,7 @@ describe('index', () => {
       'constant',
       'derive',
       'extractCanonicalSchema',
+      'generate',
       'normalInteger',
       'optional',
       'pickFrom',

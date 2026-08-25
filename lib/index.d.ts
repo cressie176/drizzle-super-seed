@@ -26,6 +26,7 @@ export interface CanonicalColumn {
   sequenceOwned: boolean;
   identityAlways: boolean;
   enumValues?: readonly string[];
+  maxValue?: number | bigint;
   maxLength?: number;
   precision?: number;
   scale?: number;
@@ -97,6 +98,38 @@ export type SchemaRules<TSchema> = {
     ? TableRules<TSchema[K]>
     : never;
 };
+
+export interface GenerationReport {
+  seed: number;
+  referenceDate: Date;
+  rowCounts: Record<string, number>;
+  durationMs: number;
+}
+
+export interface GenerationSink<TResult> {
+  beginTable?(table: CanonicalTable): Promise<void> | void;
+  writeRows(table: CanonicalTable, rows: Record<string, unknown>[]): Promise<void> | void;
+  endTable?(table: CanonicalTable): Promise<void> | void;
+  end(report: GenerationReport): TResult | Promise<TResult>;
+}
+
+export type CountRule = number;
+
+export interface GenerationConfig<TSchema = Record<string, unknown>> {
+  schema: TSchema;
+  casing?: IdentifierCasing;
+  rules: SchemaRules<TSchema>;
+  counts: Record<string, CountRule>;
+  seed?: number;
+  referenceDate?: Date;
+  lookups?: Record<string, () => Promise<unknown>>;
+  batchSize?: number;
+}
+
+export function generate<TSchema, TResult>(
+  config: GenerationConfig<TSchema>,
+  sink: GenerationSink<TResult>,
+): Promise<TResult>;
 
 export function constant<TValue>(value: TValue): ValueGenerator<TValue>;
 
