@@ -113,7 +113,7 @@ export interface GenerationSink<TResult> {
   end(report: GenerationReport): TResult | Promise<TResult>;
 }
 
-export type CountRule = number;
+export type CountRule = number | { per: string; count: ValueGenerator<number>; retain?: readonly string[] };
 
 export interface GenerationConfig<TSchema = Record<string, unknown>> {
   schema: TSchema;
@@ -123,6 +123,7 @@ export interface GenerationConfig<TSchema = Record<string, unknown>> {
   seed?: number;
   referenceDate?: Date;
   lookups?: Record<string, () => Promise<unknown>>;
+  overrides?: Record<string, Array<Record<string, unknown>>>;
   batchSize?: number;
 }
 

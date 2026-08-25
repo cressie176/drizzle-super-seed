@@ -1,8 +1,10 @@
 import {
   type CanonicalTable,
+  type CountRule,
   type GenerationReport,
   type GenerationSink,
   type SchemaRules,
+  constant,
   derive,
   generate,
   structuralDefault,
@@ -30,6 +32,17 @@ const rules = {
 
 const counts = { parks: 3, pitches: 5 };
 
+const perParentCounts: Record<string, CountRule> = {
+  parks: 3,
+  pitches: { per: 'parks', count: constant(4), retain: ['openedAt'] },
+};
+
+const perParentCountOfTheWrongType: Record<string, CountRule> = {
+  parks: 3,
+  // @ts-expect-error a per parent count must be a generator, not a number
+  pitches: { per: 'parks', count: 4 },
+};
+
 const countingSink: GenerationSink<number> = {
   beginTable: (table: CanonicalTable) => void table.key,
   writeRows: async (_table, rows) => void rows.length,
@@ -45,6 +58,16 @@ const reportingSink = {
 };
 
 const report: Promise<GenerationReport> = generate({ schema, rules, counts, seed: 42 }, reportingSink);
+
+const perParent: Promise<GenerationReport> = generate(
+  { schema, rules, counts: perParentCounts, seed: 42 },
+  reportingSink,
+);
+
+const overridden: Promise<GenerationReport> = generate(
+  { schema, rules, counts, overrides: { parks: [{ region: 'south-west' }, { id: 7 }] } },
+  reportingSink,
+);
 
 const configured: Promise<GenerationReport> = generate(
   {
@@ -77,4 +100,14 @@ const sinkWithoutWriteRows = generate(
   { end: (finished: GenerationReport) => finished },
 );
 
-export { configured, countOfTheWrongType, parkCount, report, rulesMissingATable, sinkWithoutWriteRows };
+export {
+  configured,
+  countOfTheWrongType,
+  overridden,
+  parkCount,
+  perParent,
+  perParentCountOfTheWrongType,
+  report,
+  rulesMissingATable,
+  sinkWithoutWriteRows,
+};
