@@ -803,7 +803,7 @@ The [examples](examples) directory holds five self-contained demonstrations of o
 | [examples/in-memory](examples/in-memory) | Unit tests over a navigable DataGraph, no database |
 | [examples/batch-insert](examples/batch-insert) | Ordered batches through your own drizzle db.insert, constraints enforced |
 | [examples/postgres](examples/postgres) | Bulk COPY files baked into a Postgres image by a two-line Dockerfile |
-| [examples/mariadb](examples/mariadb) | Extended INSERT files loaded through mysql2 |
+| [examples/mariadb](examples/mariadb) | Extended INSERT files, loaded through mysql2 and baked into a MariaDB image |
 | [examples/sqlite](examples/sqlite) | A complete file-backed .db built through the row batch sink |
 
 They share the domain and the faker-driven generators, but each dialect declares its own schema module: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`. There is no hand-written DDL anywhere: every database an example touches is created from its drizzle schema by `drizzle-kit generate`.

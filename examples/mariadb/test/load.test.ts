@@ -9,7 +9,6 @@ import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import mysql from 'mysql2/promise';
-import { migrationStatements } from '../src/migrations.ts';
 
 const run = promisify(execFile);
 
@@ -38,9 +37,7 @@ before(async () => {
   await connection.query('SET FOREIGN_KEY_CHECKS = 0');
   await connection.query('DROP TABLE IF EXISTS lettings, holiday_homes, owners, pitches, parks');
   await connection.query('SET FOREIGN_KEY_CHECKS = 1');
-  for (const statement of await migrationStatements(join(packageRoot, 'drizzle'))) {
-    await connection.query(statement);
-  }
+  // out/ is self-contained: 0000_schema.sql carries the DDL, so loading is just the files in order.
   for (const file of (await readdir(dataDirectory)).filter((each) => each.endsWith('.sql')).sort()) {
     await connection.query(await readFile(join(dataDirectory, file), 'utf8'));
   }

@@ -24,7 +24,7 @@
     "db:down": "docker compose down",
     "examples:typecheck": "npm run typecheck --workspaces --if-present",
     "examples:test": "npm run test --workspaces --if-present",
-    "examples:image": "npm run test:image --workspace @drizzle-super-seed/example-postgres"
+    "examples:image": "npm run test:image --workspaces --if-present"
   },
   "peerDependencies": {
     "drizzle-orm": ">=0.36"

@@ -7,7 +7,10 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "generate": "tsx scripts/generate.ts",
-    "test": "tsx --test test/load.test.ts"
+    "test": "tsx --test test/load.test.ts",
+    "test:image": "tsx --test test/image.test.ts",
+    "image:build": "docker build -t drizzle-super-seed-park-mariadb .",
+    "image:run": "docker run --rm -e MARIADB_ROOT_PASSWORD=park -e MARIADB_DATABASE=park -e MARIADB_USER=park -e MARIADB_PASSWORD=park -p 53306:3306 drizzle-super-seed-park-mariadb"
   },
   "dependencies": {
     "@faker-js/faker": "10.6.0",
