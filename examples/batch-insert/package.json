@@ -1,0 +1,24 @@
+{
+  "name": "@drizzle-super-seed/example-batch-insert",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "drizzle-super-seed through your own drizzle db.insert handler, constraints enforced",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/batch-insert.test.ts"
+  },
+  "dependencies": {
+    "@faker-js/faker": "10.6.0",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../..",
+    "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.31.10"
+  }
+}

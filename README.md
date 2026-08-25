@@ -717,21 +717,21 @@ Query plans are only meaningful against production-shaped data; a missing index 
 
 ## Worked example
 
-The [`park`](examples/park) example models a holiday-park management system (parks, pitches, holiday homes, owners, lettings) and demonstrates the library end to end, five ways:
+The [examples](examples) directory holds five self-contained demonstrations of one holiday-park domain (parks, pitches, holiday homes, owners, lettings), each a private workspace package you can read — or copy — on its own:
 
-| Example | Entry point | What it shows |
-|---|---|---|
-| In-memory | `test/in-memory.test.ts` | Unit tests over a navigable `DataGraph`, no database |
-| Batch insert | `test/batch-insert.test.ts` | Ordered batches through your own drizzle `db.insert`, constraints enforced |
-| PostgreSQL files | `scripts/postgres-files.ts` + `Dockerfile` | Bulk `COPY` files baked into a Postgres image |
-| MariaDB files | `scripts/mariadb-files.ts` | Extended `INSERT` files loaded through `mysql2` |
-| SQLite | `scripts/sqlite-database.ts` | A complete file-backed `.db` built through the row batch sink |
+| Example | Shows |
+|---|---|
+| [`examples/in-memory`](examples/in-memory) | Unit tests over a navigable `DataGraph`, no database |
+| [`examples/batch-insert`](examples/batch-insert) | Ordered batches through your own drizzle `db.insert`, constraints enforced |
+| [`examples/postgres`](examples/postgres) | Bulk `COPY` files baked into a Postgres image by a two-line Dockerfile |
+| [`examples/mariadb`](examples/mariadb) | Extended `INSERT` files loaded through `mysql2` |
+| [`examples/sqlite`](examples/sqlite) | A complete file-backed `.db` built through the row batch sink |
 
-The five share one domain and one set of faker-driven generators (`src/generators.ts`), one `counts.ts`, and the same rules shape — but each dialect declares the domain in its own schema module (`src/postgres`, `src/mariadb`, `src/sqlite`). That is a constraint, not a choice: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`.
+They share the domain and the faker-driven generators, but each dialect declares its own schema module — `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`. There is no hand-written DDL anywhere: every database an example touches is created from its drizzle schema by `drizzle-kit generate`.
 
-There is no hand-written DDL anywhere in the example. Every database — the Docker image, the integration tests, the SQLite file — is created from the drizzle schema by `drizzle-kit generate`, so the schema module is the single source of truth for structure and data alike.
+Realistic values come from the faker pattern above: `faker.seed(seed)` once, the same `seed` passed to `generate`, faker called inside `derive` rules. One caveat the examples' tests demonstrate: faker's stream continues across runs within one process, so anything calling `generate` more than once must re-seed faker between runs to replay a dataset.
 
-Realistic values come from the faker pattern above: `faker.seed(seed)` once, the same `seed` passed to `generate`, faker called inside `derive` rules. One caveat the example's tests demonstrate: faker's stream continues across runs within one process, so anything calling `generate` more than once must re-seed faker between runs to replay a dataset.
+Every code block in this README is compiled against the published types by the test suite, via the [`examples/readme`](examples/readme) harness package.
 
 ## License
 

@@ -8,8 +8,8 @@ const { promisify } = require('node:util');
 const run = promisify(execFile);
 
 const REPOSITORY_ROOT = join(__dirname, '..');
-const EXAMPLE = join(REPOSITORY_ROOT, 'examples', 'park');
-const BLOCKS = join(EXAMPLE, 'readme');
+const EXAMPLE = join(REPOSITORY_ROOT, 'examples', 'readme');
+const BLOCKS = join(EXAMPLE, 'blocks');
 
 const FENCE = /(?:<!-- readme-test: (?<directive>[a-z-]+) -->\n)?```(?<language>\w*)\n(?<body>[\s\S]*?)```/g;
 
@@ -57,8 +57,8 @@ import {
   weightedPickFrom,
   zipfInteger,
 } from 'drizzle-super-seed';
-import { rules } from '../src/postgres/rules.ts';
-import * as schema from '../src/postgres/schema.ts';
+import { rules } from '../src/rules.ts';
+import * as schema from '../src/schema.ts';
 
 // Bindings the README's excerpts assume from their surrounding prose.
 declare const counts: Record<string, CountRule>;

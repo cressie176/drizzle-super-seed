@@ -1,0 +1,21 @@
+{
+  "name": "@drizzle-super-seed/example-readme",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Not an example: every code block in the project README, compiled as a test",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@faker-js/faker": "10.6.0",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/better-sqlite3": "^9.6.0"
+  }
+}

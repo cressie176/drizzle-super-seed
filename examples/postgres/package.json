@@ -1,0 +1,25 @@
+{
+  "name": "@drizzle-super-seed/example-postgres",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "drizzle-super-seed bulk COPY files, baked into a PostgreSQL Docker image",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx scripts/generate.ts",
+    "test:image": "tsx --test test/image.test.ts",
+    "image:build": "docker build -t drizzle-super-seed-park .",
+    "image:run": "docker run --rm -e POSTGRES_PASSWORD=park -p 55432:5432 drizzle-super-seed-park"
+  },
+  "dependencies": {
+    "@faker-js/faker": "10.6.0",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "drizzle-kit": "^0.31.10"
+  }
+}

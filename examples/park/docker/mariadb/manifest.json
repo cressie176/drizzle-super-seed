@@ -1,0 +1,22 @@
+{
+  "seed": 42,
+  "referenceDate": "2026-08-25T12:43:27.606Z",
+  "rowCounts": {
+    "owners": 5000,
+    "parks": 20,
+    "pitches": 4001,
+    "holidayHomes": 4155,
+    "lettings": 25804
+  },
+  "durationMs": 161,
+  "generatedAt": "2026-08-25T12:43:27.768Z",
+  "rowsPerStatement": 1000,
+  "files": [
+    "010_owners.sql",
+    "020_parks.sql",
+    "030_pitches.sql",
+    "040_holidayHomes.sql",
+    "050_lettings.sql",
+    "900_finalise.sql"
+  ]
+}

@@ -1,0 +1,6 @@
+source 010_owners.sql;
+source 020_parks.sql;
+source 030_pitches.sql;
+source 040_holidayHomes.sql;
+source 050_lettings.sql;
+source 900_finalise.sql;

@@ -1,0 +1,7 @@
+\set ON_ERROR_STOP on
+\ir 010_owners.sql
+\ir 020_parks.sql
+\ir 030_pitches.sql
+\ir 040_holidayHomes.sql
+\ir 050_lettings.sql
+\ir 900_finalise.sql

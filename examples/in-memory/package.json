@@ -1,0 +1,21 @@
+{
+  "name": "@drizzle-super-seed/example-in-memory",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "drizzle-super-seed in a unit test: a complete, navigable in-memory dataset, no database",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/in-memory.test.ts"
+  },
+  "dependencies": {
+    "@faker-js/faker": "10.6.0",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
