@@ -7,6 +7,7 @@ describe('index', () => {
       'ColumnKind',
       'IdentifierCasing',
       'constant',
+      'createInMemoryGraphSink',
       'derive',
       'extractCanonicalSchema',
       'generate',

@@ -127,6 +127,23 @@ export interface GenerationConfig<TSchema = Record<string, unknown>> {
   batchSize?: number;
 }
 
+export interface DataGraph {
+  report: GenerationReport;
+  rows: Record<string, Record<string, unknown>[]>;
+  parentOf(
+    childTableKey: string,
+    childRow: Record<string, unknown>,
+    foreignKeyColumn: string,
+  ): Record<string, unknown> | null;
+  childrenOf(
+    parentTableKey: string,
+    parentRow: Record<string, unknown>,
+    childTableKey: string,
+  ): Record<string, unknown>[];
+}
+
+export function createInMemoryGraphSink(): GenerationSink<DataGraph>;
+
 export function generate<TSchema, TResult>(
   config: GenerationConfig<TSchema>,
   sink: GenerationSink<TResult>,
