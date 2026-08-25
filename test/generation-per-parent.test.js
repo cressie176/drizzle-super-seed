@@ -331,6 +331,17 @@ describe('overrides', () => {
     deq(valuesOf(pending, 'lettings', 'status').slice(0, 1), ['pending']);
   });
 
+  it('skips rows given as undefined, null or an empty object, overriding only the rows named', async () => {
+    const result = await generateLettings({ lettings: [undefined, null, { status: CANCELLED }] });
+    const statuses = valuesOf(result, 'lettings', 'status');
+
+    eq(statuses[2], CANCELLED);
+    eq(statuses.length, 3);
+
+    const viaEmptyObjects = await generateLettings({ lettings: [{}, {}, { status: CANCELLED }] });
+    deq(rowsOf(viaEmptyObjects, 'lettings'), rowsOf(result, 'lettings'));
+  });
+
   it('leaves later rows free to generate any value', async () => {
     const result = await generateLettings({ lettings: [{ status: CANCELLED }] }, { lettings: 200 });
     const later = valuesOf(result, 'lettings', 'status').slice(1);

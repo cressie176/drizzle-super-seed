@@ -126,9 +126,10 @@ const typecheck = () =>
     .then(() => ({ code: 0, output: '' }))
     .catch((error) => ({ code: error.code, output: error.stdout ?? '' }));
 
-const BACKTICKED_ERROR = /`(\w+Error)`/g;
+// Table cells use no backticks (house style), so error names are matched bare wherever they appear.
+const ERROR_NAME = /\b([A-Z]\w*Error)\b/g;
 
-const documentedErrorNames = (markdown) => new Set([...markdown.matchAll(BACKTICKED_ERROR)].map(([, name]) => name));
+const documentedErrorNames = (markdown) => new Set([...markdown.matchAll(ERROR_NAME)].map(([, name]) => name));
 
 // generation-errors.js is module-private, but a doc test is in the same category as the module's
 // own test file: it is the only place which can see the whole list.
