@@ -574,13 +574,13 @@ describe('drizzle schema adapter', () => {
 
   describe('identifier casing', () => {
     const camelCasedProperties = pgTable('casing_probe', {
-      pitchId: integer().primaryKey(),
+      pitchId: integer(),
       ownerName: varchar({ length: 10 }),
       explicitlyNamed: integer('explicit_name'),
     });
 
     const snakeCasedProperties = pgTable('casing_probe', {
-      pitch_id: integer().primaryKey(),
+      pitch_id: integer(),
       explicitlyNamed: integer('explicitName'),
     });
 
@@ -625,7 +625,7 @@ describe('drizzle schema adapter', () => {
     });
 
     it('keeps a declared table name verbatim, whatever the casing', () => {
-      const holidayHomes = pgTable('holidayHomes', { pitchId: integer().primaryKey() });
+      const holidayHomes = pgTable('holidayHomes', { pitchId: integer() });
       const canonical = extractCanonicalSchema({ holidayHomes }, { casing: IdentifierCasing.SnakeCase });
       deq(canonical.tables.get('holidayHomes').name, 'holidayHomes');
     });
@@ -694,15 +694,10 @@ describe('drizzle schema adapter', () => {
   });
 
   describe('missing primary keys', () => {
-    it('rejects a table drizzle-super-seed cannot reference rows of, naming it as the schema declares it', () => {
+    it('reports an empty primary key rather than refusing the table', () => {
       const auditEntries = pgTable('audit_entries', { note: integer('note') });
-      throws(() => extractCanonicalSchema({ auditEntries }), {
-        name: 'MissingPrimaryKeyError',
-        message:
-          'Table auditEntries has no primary key, which drizzle-super-seed needs to reference its rows. ' +
-          'Give it one, or leave it out of the schema passed to generate.',
-        table: 'auditEntries',
-      });
+
+      deq(extractCanonicalSchema({ auditEntries }).tables.get('auditEntries').primaryKey, []);
     });
   });
 
