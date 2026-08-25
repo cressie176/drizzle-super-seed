@@ -1,7 +1,19 @@
 const { describe, it } = require('node:test');
 const { deepEqual: deq, throws } = require('node:assert');
 const { relations } = require('drizzle-orm');
-const { foreignKey, integer, interval, pgTable, primaryKey, varchar } = require('drizzle-orm/pg-core');
+const {
+  bigint,
+  bigserial,
+  date,
+  foreignKey,
+  integer,
+  interval,
+  numeric,
+  pgTable,
+  primaryKey,
+  timestamp,
+  varchar,
+} = require('drizzle-orm/pg-core');
 const { ColumnKind, IdentifierCasing, extractCanonicalSchema } = require('../lib');
 const parkSchema = require('./lib/park-schema');
 
@@ -42,21 +54,37 @@ const expectedParkSchema = new Map([
         name: 'id',
         propertyName: 'id',
         kind: ColumnKind.Integer,
+        jsType: 'number',
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
         sequenceOwned: true,
         identityAlways: true,
       }),
-      column({ name: 'name', propertyName: 'name', kind: ColumnKind.Text, notNull: true, maxLength: 120 }),
-      column({ name: 'region', propertyName: 'region', kind: ColumnKind.Text, notNull: true, maxLength: 40 }),
-      column({ name: 'opened_at', propertyName: 'openedAt', kind: ColumnKind.Date, notNull: true }),
-      column({ name: 'latitude', propertyName: 'latitude', kind: ColumnKind.Real }),
-      column({ name: 'amenities', propertyName: 'amenities', kind: ColumnKind.Json }),
+      column({
+        name: 'name',
+        propertyName: 'name',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+        maxLength: 120,
+      }),
+      column({
+        name: 'region',
+        propertyName: 'region',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+        maxLength: 40,
+      }),
+      column({ name: 'opened_at', propertyName: 'openedAt', kind: ColumnKind.Date, jsType: 'string', notNull: true }),
+      column({ name: 'latitude', propertyName: 'latitude', kind: ColumnKind.Real, jsType: 'number' }),
+      column({ name: 'amenities', propertyName: 'amenities', kind: ColumnKind.Json, jsType: 'json' }),
       column({
         name: 'active',
         propertyName: 'active',
         kind: ColumnKind.Boolean,
+        jsType: 'boolean',
         notNull: true,
         hasDatabaseDefault: true,
       }),
@@ -64,6 +92,7 @@ const expectedParkSchema = new Map([
         name: 'created_at',
         propertyName: 'createdAt',
         kind: ColumnKind.Timestamp,
+        jsType: 'date',
         notNull: true,
         hasDatabaseDefault: true,
         withTimezone: true,
@@ -79,18 +108,27 @@ const expectedParkSchema = new Map([
         name: 'id',
         propertyName: 'id',
         kind: ColumnKind.Integer,
+        jsType: 'number',
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
         sequenceOwned: true,
       }),
-      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, notNull: true }),
-      column({ name: 'reference', propertyName: 'reference', kind: ColumnKind.Text, notNull: true, maxLength: 20 }),
-      column({ name: 'area_sqm', propertyName: 'areaSqm', kind: ColumnKind.Real }),
+      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, jsType: 'number', notNull: true }),
+      column({
+        name: 'reference',
+        propertyName: 'reference',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+        maxLength: 20,
+      }),
+      column({ name: 'area_sqm', propertyName: 'areaSqm', kind: ColumnKind.Real, jsType: 'number' }),
       column({
         name: 'has_electricity',
         propertyName: 'hasElectricity',
         kind: ColumnKind.Boolean,
+        jsType: 'boolean',
         notNull: true,
         hasDatabaseDefault: true,
       }),
@@ -105,21 +143,48 @@ const expectedParkSchema = new Map([
         name: 'id',
         propertyName: 'id',
         kind: ColumnKind.Uuid,
+        jsType: 'string',
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
       }),
-      column({ name: 'full_name', propertyName: 'fullName', kind: ColumnKind.Text, notNull: true, maxLength: 200 }),
-      column({ name: 'email', propertyName: 'email', kind: ColumnKind.Text, notNull: true, maxLength: 320 }),
-      column({ name: 'member_since', propertyName: 'memberSince', kind: ColumnKind.Date, notNull: true }),
+      column({
+        name: 'full_name',
+        propertyName: 'fullName',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+        maxLength: 200,
+      }),
+      column({
+        name: 'email',
+        propertyName: 'email',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+        maxLength: 320,
+      }),
+      column({
+        name: 'member_since',
+        propertyName: 'memberSince',
+        kind: ColumnKind.Date,
+        jsType: 'string',
+        notNull: true,
+      }),
       column({
         name: 'loyalty_points',
         propertyName: 'loyaltyPoints',
         kind: ColumnKind.BigInt,
+        jsType: 'number',
         notNull: true,
         hasDatabaseDefault: true,
       }),
-      column({ name: 'referred_by_owner_id', propertyName: 'referredByOwnerId', kind: ColumnKind.Uuid }),
+      column({
+        name: 'referred_by_owner_id',
+        propertyName: 'referredByOwnerId',
+        kind: ColumnKind.Uuid,
+        jsType: 'string',
+      }),
     ],
     {
       primaryKey: ['id'],
@@ -135,24 +200,32 @@ const expectedParkSchema = new Map([
         name: 'id',
         propertyName: 'id',
         kind: ColumnKind.BigInt,
+        jsType: 'number',
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
         sequenceOwned: true,
       }),
-      column({ name: 'pitch_id', propertyName: 'pitchId', kind: ColumnKind.Integer, notNull: true }),
-      column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, notNull: true }),
-      column({ name: 'previous_owner_id', propertyName: 'previousOwnerId', kind: ColumnKind.Uuid }),
-      column({ name: 'model', propertyName: 'model', kind: ColumnKind.Text, notNull: true }),
+      column({ name: 'pitch_id', propertyName: 'pitchId', kind: ColumnKind.Integer, jsType: 'number', notNull: true }),
+      column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, jsType: 'string', notNull: true }),
+      column({ name: 'previous_owner_id', propertyName: 'previousOwnerId', kind: ColumnKind.Uuid, jsType: 'string' }),
+      column({ name: 'model', propertyName: 'model', kind: ColumnKind.Text, jsType: 'string', notNull: true }),
       column({
         name: 'purchase_price',
         propertyName: 'purchasePrice',
         kind: ColumnKind.Decimal,
+        jsType: 'string',
         precision: 10,
         scale: 2,
       }),
-      column({ name: 'specification', propertyName: 'specification', kind: ColumnKind.Json }),
-      column({ name: 'inspected_at', propertyName: 'inspectedAt', kind: ColumnKind.Timestamp, withTimezone: false }),
+      column({ name: 'specification', propertyName: 'specification', kind: ColumnKind.Json, jsType: 'json' }),
+      column({
+        name: 'inspected_at',
+        propertyName: 'inspectedAt',
+        kind: ColumnKind.Timestamp,
+        jsType: 'date',
+        withTimezone: false,
+      }),
     ],
     {
       primaryKey: ['id'],
@@ -171,17 +244,31 @@ const expectedParkSchema = new Map([
         name: 'id',
         propertyName: 'id',
         kind: ColumnKind.Integer,
+        jsType: 'number',
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
         sequenceOwned: true,
       }),
-      column({ name: 'holiday_home_id', propertyName: 'holidayHomeId', kind: ColumnKind.BigInt, notNull: true }),
-      column({ name: 'description', propertyName: 'description', kind: ColumnKind.Text, notNull: true }),
+      column({
+        name: 'holiday_home_id',
+        propertyName: 'holidayHomeId',
+        kind: ColumnKind.BigInt,
+        jsType: 'number',
+        notNull: true,
+      }),
+      column({
+        name: 'description',
+        propertyName: 'description',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+      }),
       column({
         name: 'quantity',
         propertyName: 'quantity',
         kind: ColumnKind.Integer,
+        jsType: 'number',
         notNull: true,
         hasDatabaseDefault: true,
       }),
@@ -196,34 +283,56 @@ const expectedParkSchema = new Map([
         name: 'id',
         propertyName: 'id',
         kind: ColumnKind.Integer,
+        jsType: 'number',
         notNull: true,
         hasDatabaseDefault: true,
         isPrimaryKey: true,
         sequenceOwned: true,
         identityAlways: true,
       }),
-      column({ name: 'holiday_home_id', propertyName: 'holidayHomeId', kind: ColumnKind.BigInt, notNull: true }),
-      column({ name: 'guest_name', propertyName: 'guestName', kind: ColumnKind.Text, notNull: true, maxLength: 200 }),
+      column({
+        name: 'holiday_home_id',
+        propertyName: 'holidayHomeId',
+        kind: ColumnKind.BigInt,
+        jsType: 'number',
+        notNull: true,
+      }),
+      column({
+        name: 'guest_name',
+        propertyName: 'guestName',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+        maxLength: 200,
+      }),
       column({
         name: 'status',
         propertyName: 'status',
         kind: ColumnKind.Enum,
+        jsType: 'string',
         notNull: true,
         hasDatabaseDefault: true,
         enumValues: ['pending', 'confirmed', 'cancelled'],
       }),
-      column({ name: 'start_date', propertyName: 'startDate', kind: ColumnKind.Date, notNull: true }),
-      column({ name: 'end_date', propertyName: 'endDate', kind: ColumnKind.Date, notNull: true }),
-      column({ name: 'arrival_time', propertyName: 'arrivalTime', kind: ColumnKind.Time, notNull: true }),
+      column({ name: 'start_date', propertyName: 'startDate', kind: ColumnKind.Date, jsType: 'string', notNull: true }),
+      column({ name: 'end_date', propertyName: 'endDate', kind: ColumnKind.Date, jsType: 'string', notNull: true }),
+      column({
+        name: 'arrival_time',
+        propertyName: 'arrivalTime',
+        kind: ColumnKind.Time,
+        jsType: 'string',
+        notNull: true,
+      }),
       column({
         name: 'site_fee',
         propertyName: 'siteFee',
         kind: ColumnKind.Decimal,
+        jsType: 'string',
         notNull: true,
         precision: 8,
         scale: 2,
       }),
-      column({ name: 'notes', propertyName: 'notes', kind: ColumnKind.Text }),
+      column({ name: 'notes', propertyName: 'notes', kind: ColumnKind.Text, jsType: 'string' }),
     ],
     {
       primaryKey: ['id'],
@@ -235,8 +344,8 @@ const expectedParkSchema = new Map([
     'parkOwners',
     'park_owners',
     [
-      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, notNull: true }),
-      column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, notNull: true }),
+      column({ name: 'park_id', propertyName: 'parkId', kind: ColumnKind.Integer, jsType: 'number', notNull: true }),
+      column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, jsType: 'string', notNull: true }),
     ],
     {
       primaryKey: ['park_id', 'owner_id'],
@@ -251,6 +360,51 @@ describe('drizzle schema adapter', () => {
   describe('the park schema', () => {
     it('extracts every table and column exactly', () => {
       deq(extractCanonicalSchema(parkSchema), { tables: expectedParkSchema });
+    });
+  });
+
+  describe('javascript representations', () => {
+    const everyMode = pgTable('every_mode', {
+      id: integer('id').primaryKey(),
+      dateAsString: date('date_as_string'),
+      dateAsDate: date('date_as_date', { mode: 'date' }),
+      timestampAsDate: timestamp('timestamp_as_date'),
+      timestampAsString: timestamp('timestamp_as_string', { mode: 'string' }),
+      numericAsString: numeric('numeric_as_string'),
+      numericAsNumber: numeric('numeric_as_number', { mode: 'number' }),
+      numericAsBigInt: numeric('numeric_as_big_int', { mode: 'bigint' }),
+      bigIntAsNumber: bigint('big_int_as_number', { mode: 'number' }),
+      bigIntAsBigInt: bigint('big_int_as_big_int', { mode: 'bigint' }),
+      bigSerialAsBigInt: bigserial('big_serial_as_big_int', { mode: 'bigint' }),
+    });
+
+    const representationOf = (propertyName) => {
+      const column = extractCanonicalSchema({ everyMode })
+        .tables.get('everyMode')
+        .columns.find((each) => each.propertyName === propertyName);
+      return [column.kind, column.jsType];
+    };
+
+    it('records which representation a date column inserts', () => {
+      deq(representationOf('dateAsString'), [ColumnKind.Date, 'string']);
+      deq(representationOf('dateAsDate'), [ColumnKind.Date, 'date']);
+    });
+
+    it('records which representation a timestamp column inserts', () => {
+      deq(representationOf('timestampAsDate'), [ColumnKind.Timestamp, 'date']);
+      deq(representationOf('timestampAsString'), [ColumnKind.Timestamp, 'string']);
+    });
+
+    it('records which representation a numeric column inserts', () => {
+      deq(representationOf('numericAsString'), [ColumnKind.Decimal, 'string']);
+      deq(representationOf('numericAsNumber'), [ColumnKind.Decimal, 'number']);
+      deq(representationOf('numericAsBigInt'), [ColumnKind.Decimal, 'bigint']);
+    });
+
+    it('records which representation a bigint column inserts', () => {
+      deq(representationOf('bigIntAsNumber'), [ColumnKind.BigInt, 'number']);
+      deq(representationOf('bigIntAsBigInt'), [ColumnKind.BigInt, 'bigint']);
+      deq(representationOf('bigSerialAsBigInt'), [ColumnKind.BigInt, 'bigint']);
     });
   });
 

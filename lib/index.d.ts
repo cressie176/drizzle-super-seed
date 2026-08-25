@@ -19,6 +19,7 @@ export interface CanonicalColumn {
   name: string;
   propertyName: string;
   kind: ColumnKind;
+  jsType: 'number' | 'string' | 'bigint' | 'boolean' | 'date' | 'json';
   notNull: boolean;
   hasDatabaseDefault: boolean;
   isPrimaryKey: boolean;

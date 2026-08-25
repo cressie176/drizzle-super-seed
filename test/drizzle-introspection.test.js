@@ -1,7 +1,17 @@
 const { describe, it } = require('node:test');
 const { equal: eq, deepEqual: deq } = require('node:assert');
 const { getTableColumns } = require('drizzle-orm');
-const { getTableConfig, integer, pgTable, varchar } = require('drizzle-orm/pg-core');
+const {
+  bigint,
+  bigserial,
+  date,
+  getTableConfig,
+  integer,
+  numeric,
+  pgTable,
+  timestamp,
+  varchar,
+} = require('drizzle-orm/pg-core');
 const { toCamelCase, toSnakeCase } = require('drizzle-orm/casing');
 const { lettingStatus, ...parkTables } = require('./lib/park-schema');
 
@@ -118,6 +128,57 @@ describe('installed drizzle-orm introspection', () => {
       deq([id.notNull, id.hasDefault, id.primary], [true, true, true]);
       const latitude = columnNamed(parkTables.parks, 'latitude');
       deq([latitude.notNull, latitude.hasDefault, latitude.primary], [false, false, false]);
+    });
+  });
+
+  describe('javascript representations', () => {
+    const everyMode = pgTable('every_mode', {
+      id: integer('id').primaryKey(),
+      dateAsString: date('date_as_string'),
+      dateAsDate: date('date_as_date', { mode: 'date' }),
+      timestampAsDate: timestamp('timestamp_as_date'),
+      timestampAsString: timestamp('timestamp_as_string', { mode: 'string' }),
+      numericAsString: numeric('numeric_as_string'),
+      numericAsNumber: numeric('numeric_as_number', { mode: 'number' }),
+      numericAsBigInt: numeric('numeric_as_big_int', { mode: 'bigint' }),
+      bigIntAsNumber: bigint('big_int_as_number', { mode: 'number' }),
+      bigIntAsBigInt: bigint('big_int_as_big_int', { mode: 'bigint' }),
+      bigSerialAsBigInt: bigserial('big_serial_as_big_int', { mode: 'bigint' }),
+    });
+
+    const representationOf = (propertyName) => {
+      const column = columnNamed(everyMode, propertyName);
+      return [column.columnType, column.dataType];
+    };
+
+    it('distinguishes the two date modes, defaulting to a string', () => {
+      deq(representationOf('dateAsString'), ['PgDateString', 'string']);
+      deq(representationOf('dateAsDate'), ['PgDate', 'date']);
+    });
+
+    it('distinguishes the two timestamp modes, defaulting to a Date', () => {
+      deq(representationOf('timestampAsDate'), ['PgTimestamp', 'date']);
+      deq(representationOf('timestampAsString'), ['PgTimestampString', 'string']);
+    });
+
+    it('distinguishes the three numeric modes, defaulting to a string', () => {
+      deq(representationOf('numericAsString'), ['PgNumeric', 'string']);
+      deq(representationOf('numericAsNumber'), ['PgNumericNumber', 'number']);
+      deq(representationOf('numericAsBigInt'), ['PgNumericBigInt', 'bigint']);
+    });
+
+    it('distinguishes the two bigint modes, which have no default', () => {
+      deq(representationOf('bigIntAsNumber'), ['PgBigInt53', 'number']);
+      deq(representationOf('bigIntAsBigInt'), ['PgBigInt64', 'bigint']);
+      deq(representationOf('bigSerialAsBigInt'), ['PgBigSerial64', 'bigint']);
+    });
+
+    it('reports one representation for every column the park schema declares', () => {
+      const representations = Object.values(parkTables).flatMap((table) =>
+        Object.values(getTableColumns(table)).map((column) => column.dataType),
+      );
+
+      deq(new Set(representations), new Set(['number', 'string', 'boolean', 'date', 'json']));
     });
   });
 

@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const { deepEqual: deq, equal: eq, notEqual: notEq, ok, throws } = require('node:assert');
-const { integer, numeric, pgTable, uuid, varchar } = require('drizzle-orm/pg-core');
+const { bigint, bigserial, date, integer, numeric, pgTable, timestamp, uuid, varchar } = require('drizzle-orm/pg-core');
 const { extractCanonicalSchema, structuralDefault } = require('../lib');
 const { PlanSource, resolveGenerationPlan } = require('../lib/generation-rules');
 const { REFERENCE_DATE, contextFor, draw } = require('./lib/generator-draws');
@@ -53,6 +53,36 @@ const shortCodes = pgTable('short_codes', {
 
 const shortCodeRules = {
   shortCodes: { id: structuralDefault, code: structuralDefault, amount: structuralDefault },
+};
+
+const everyMode = pgTable('every_mode', {
+  id: integer('id').primaryKey(),
+  dateAsString: date('date_as_string').notNull(),
+  dateAsDate: date('date_as_date', { mode: 'date' }).notNull(),
+  timestampAsDate: timestamp('timestamp_as_date').notNull(),
+  timestampAsString: timestamp('timestamp_as_string', { mode: 'string' }).notNull(),
+  numericAsString: numeric('numeric_as_string').notNull(),
+  numericAsNumber: numeric('numeric_as_number', { mode: 'number' }).notNull(),
+  numericAsBigInt: numeric('numeric_as_big_int', { mode: 'bigint' }).notNull(),
+  bigIntAsNumber: bigint('big_int_as_number', { mode: 'number' }).notNull(),
+  bigIntAsBigInt: bigint('big_int_as_big_int', { mode: 'bigint' }).notNull(),
+  bigSerialAsBigInt: bigserial('big_serial_as_big_int', { mode: 'bigint' }).notNull(),
+});
+
+const everyModeRules = {
+  everyMode: {
+    id: structuralDefault,
+    dateAsString: structuralDefault,
+    dateAsDate: structuralDefault,
+    timestampAsDate: structuralDefault,
+    timestampAsString: structuralDefault,
+    numericAsString: structuralDefault,
+    numericAsNumber: structuralDefault,
+    numericAsBigInt: structuralDefault,
+    bigIntAsNumber: structuralDefault,
+    bigIntAsBigInt: structuralDefault,
+    bigSerialAsBigInt: structuralDefault,
+  },
 };
 
 const departments = pgTable('departments', {
@@ -351,6 +381,81 @@ describe('generation rules', () => {
         const values = structuralValues('parks', 'name', LARGE_SAMPLE);
 
         ok(values.every((value) => typeof value === 'string'));
+      });
+    });
+
+    describe('declared representations', () => {
+      const modeValues = (propertyName, count) => {
+        const plan = planFor(everyModeRules, { everyMode: 1 }, { everyMode });
+        return draw(entryFor(plan, 'everyMode', propertyName).generator, count);
+      };
+
+      const withinFiveYears = (date) => date <= REFERENCE_DATE && date >= new Date('2019-06-01T00:00:00.000Z');
+
+      it('generates a date column as the string drizzle inserts by default', () => {
+        const values = modeValues('dateAsString', LARGE_SAMPLE);
+
+        ok(values.every((value) => DATE_STRING.test(value)));
+      });
+
+      it('generates a date column declared mode date as a Date', () => {
+        const values = modeValues('dateAsDate', LARGE_SAMPLE);
+
+        ok(values.every((value) => value instanceof Date && withinFiveYears(value)));
+      });
+
+      it('generates a timestamp column as the Date drizzle inserts by default', () => {
+        const values = modeValues('timestampAsDate', LARGE_SAMPLE);
+
+        ok(values.every((value) => value instanceof Date && withinFiveYears(value)));
+      });
+
+      it('generates a timestamp column declared mode string as an iso string', () => {
+        const values = modeValues('timestampAsString', LARGE_SAMPLE);
+
+        ok(values.every((value) => typeof value === 'string'));
+        ok(values.every((value) => withinFiveYears(new Date(value))));
+        ok(values.every((value) => new Date(value).toISOString() === value));
+      });
+
+      it('generates a numeric column as the string drizzle inserts by default', () => {
+        const values = modeValues('numericAsString', LARGE_SAMPLE);
+
+        ok(values.every((value) => /^\d{1,8}\.\d{2}$/.test(value)));
+      });
+
+      it('generates a numeric column declared mode number as a number', () => {
+        const values = modeValues('numericAsNumber', LARGE_SAMPLE);
+
+        ok(values.every((value) => typeof value === 'number' && value >= 0 && value < 100_000_000));
+        ok(values.every((value) => /^\d+(\.\d{1,2})?$/.test(String(value))));
+        ok(values.some((value) => !Number.isInteger(value)));
+      });
+
+      it('generates a numeric column declared mode bigint as a bigint', () => {
+        const values = modeValues('numericAsBigInt', LARGE_SAMPLE);
+
+        ok(values.every((value) => typeof value === 'bigint' && value >= 0n && value < 100_000_000n));
+      });
+
+      it('generates a bigint column declared mode number as a number', () => {
+        const values = modeValues('bigIntAsNumber', LARGE_SAMPLE);
+
+        ok(values.every((value) => Number.isInteger(value) && value >= 0 && value <= 1_000_000));
+      });
+
+      it('generates a bigint column declared mode bigint as a bigint', () => {
+        const values = modeValues('bigIntAsBigInt', LARGE_SAMPLE);
+
+        ok(values.every((value) => typeof value === 'bigint' && value >= 0n && value <= 1_000_000n));
+      });
+
+      it('counts a bigserial sequence in bigints', () => {
+        deq(modeValues('bigSerialAsBigInt', 3), [1n, 2n, 3n]);
+      });
+
+      it('counts a serial sequence in numbers', () => {
+        deq(structuralValues('pitches', 'id', 3), [1, 2, 3]);
       });
     });
 
