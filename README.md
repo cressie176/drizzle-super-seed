@@ -642,6 +642,7 @@ schema never loads half-assigned.
 - Databases per the [matrix](#databases); no SQLite file sink, by design.
 - Composite primary keys and unique constraints are supported. Composite foreign keys are not. Use a single-column surrogate primary key on the parent and retain the natural key as a unique constraint.
 - Array columns and exotic types are rejected with a clear error naming the column.
+- Binary columns (`binary`, `varbinary`, `blob`) are rejected the same way, in every dialect. Generating readable words into a column that means bytes would be worse than refusing.
 - No incremental seeding into a database that already has data.
 
 ### Why there is no SQLite file sink

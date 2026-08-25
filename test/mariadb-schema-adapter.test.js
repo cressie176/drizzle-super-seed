@@ -191,7 +191,12 @@ describe('mariadb schema adapter', () => {
         blob: mysql.binary('blob', { length: 4 }),
       });
 
-      eq(extractCanonicalSchema({ probe }).tables.get('probe').columns[1].kind, ColumnKind.Text);
+      throws(() => extractCanonicalSchema({ probe }), {
+        name: 'UnsupportedColumnTypeError',
+        table: 'probe',
+        column: 'blob',
+        columnType: 'MySqlBinary',
+      });
     });
   });
 

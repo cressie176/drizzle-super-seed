@@ -24,6 +24,7 @@ export interface CanonicalColumn {
   sequenceOwned: boolean;
   identityAlways: boolean;
   enumValues?: readonly string[];
+  minValue?: number | bigint;
   maxValue?: number | bigint;
   maxLength?: number;
   precision?: number;
