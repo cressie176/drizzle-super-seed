@@ -32,6 +32,7 @@ drizzle-super-seed separates data generation from its output. The same rules can
   - [Row batches](#createrowbatchsink-integration-tests)
   - [PostgreSQL files](#createpostgressqlfilesink-bulk-load)
   - [PostgreSQL stream](#createpostgressqlstreamsink-streaming-bulk-load)
+  - [MariaDB files](#createmariadbsqlfilesink-bulk-load)
   - [Custom sinks](#custom-sinks)
 - [Schema support](#schema-support)
   - [Databases](#databases)
@@ -39,6 +40,7 @@ drizzle-super-seed separates data generation from its output. The same rules can
   - [Identity and serial columns](#identity-and-serial-columns)
   - [Self-references and cycles](#self-references-and-cycles)
   - [Limits](#limits)
+  - [Errors](#errors)
   - [Why there is no SQLite file sink](#why-there-is-no-sqlite-file-sink)
 - [Comparison with drizzle-seed](#comparison-with-drizzle-seed)
 - [Use with drizzle-explain](#use-with-drizzle-explain)
@@ -327,6 +329,17 @@ const data = await generate({
 
 Overrides are most useful for values which affect the behaviour under test, including statuses, boundary dates and specific relationships. They should generally remain partial so that incidental data continues to vary.
 
+Three things to know about overrides:
+
+- **An override changes the rest of the dataset.** A pinned column does not draw from the random
+  source, so every value generated after it moves. Pin the seed and the overrides together, and
+  expect the data to shift when you add or remove one.
+- **Overrides index the table, not the parent.** `overrides.pitches[0]` is the first pitch of the
+  whole run, not the first pitch of the first park.
+- **Nothing warns you about an override which does not apply.** An override for a table with no
+  count, a key which is not a column, or an index beyond the number of rows generated is silently
+  unused. Check the count before assuming the test data is wrong.
+
 ## Counts and shape
 
 Counts decide which tables are generated, how many rows they contain and, optionally, how child rows are distributed between parents. Tables omitted from `counts` are not generated.
@@ -521,6 +534,36 @@ Use streaming for one-off loads, such as CI seeding a temporary database. Use th
 
 Both PostgreSQL sinks generate rows as a stream, so memory use remains broadly constant as row counts increase. There is deliberately no option to return all generated SQL as one string, which could consume several gigabytes at production volumes.
 
+### createMariaDbSqlFileSink: bulk load
+
+The MariaDB equivalent of the PostgreSQL file sink. It writes numbered, self-contained table files
+of extended `INSERT` statements, a `900_finalise.sql` running `ANALYZE TABLE`, a `load.mysql`
+orchestrator, and a `manifest.json`.
+
+```ts
+await generate({ schema, rules, counts, seed: 42 }, createMariaDbSqlFileSink({ directory: 'docker/initdb' }));
+```
+
+Load them with the `mysql` or `mariadb` client, either file by file — which is what the MariaDB
+Docker image's `/docker-entrypoint-initdb.d` does — or in one invocation:
+
+```sh
+mariadb -u user -p database -e 'source load.mysql'
+```
+
+Differences from the PostgreSQL sink, all following from MySQL rather than from choice:
+
+- Each file opens a transaction and sets `foreign_key_checks = 0` and `unique_checks = 0`. Both are
+  ordinary session settings, so no superuser is needed and there is no `TriggerHandling` option.
+- Rows are written as extended `INSERT` statements, 1,000 per statement by default. Raise
+  `rowsPerStatement` for slightly smaller files and slightly faster loads, but keep the resulting
+  statement inside the server's `max_allowed_packet` (64 MB by default); the manifest records the
+  size used.
+- There is no sequence fix-up file. InnoDB advances `AUTO_INCREMENT` past explicitly inserted ids by
+  itself.
+- The orchestrator is `load.mysql` rather than `load.psql`, kept outside the Docker image's `*.sql`
+  glob for the same reason: so the numbered files load once rather than twice.
+
 ### Custom sinks
 
 Implement `GenerationSink` when the built-in outputs do not fit. A custom sink could write NDJSON or CSV, publish to a queue, or load another database.
@@ -581,6 +624,14 @@ For a cycle between different tables, such as `parks.wardenId` referencing `staf
 
 A cycle in which every foreign key is non-nullable is rejected. No row in such a cycle can be inserted first, so at least one edge must be nullable.
 
+The deferred column is assigned by the engine, so **a rule written for it is never evaluated** —
+neither in the first pass, where the column is `NULL`, nor in the second, which picks from the
+now-complete pool. An override on a deferred column *is* honoured, in the second pass. If you need
+control over a deferred relationship, override it.
+
+A sink which cannot apply the second pass is rejected before any row is generated, so a cyclic
+schema never loads half-assigned.
+
 ### Limits
 
 - Databases per the [matrix](#databases); no SQLite file sink, by design.
@@ -609,6 +660,40 @@ const db = drizzle({ client: database });
 await generate({ schema, rules, counts, seed: 42 }, createRowBatchSink((batch) => db.insert(batch.table).values(batch.rows)));
 database.close();
 ```
+
+### Errors
+
+Every error extends `GenerationError`, carries structured fields as well as a message, and names the
+table and column as your schema declares them rather than as the database does. Most fire before any
+row is generated.
+
+| Error | Raised when |
+|---|---|
+| `UnsupportedColumnTypeError` | a column's type has no generator, naming the drizzle type |
+| `UnsupportedRelationshipError` | a foreign key spans more than one column |
+| `IncompleteSchemaError` | a foreign key points at a table missing from the schema module |
+| `MissingPrimaryKeyError` | a table has no primary key to reference its rows by |
+| `MixedDialectError` | one schema module mixes PostgreSQL, MariaDB or SQLite tables |
+| `WrongDialectError` | a single-dialect sink is given a schema of another dialect |
+| `CircularDependencyError` | every foreign key in a cycle is `NOT NULL` |
+| `MissingTableRulesError` | a counted table has no rules object |
+| `MissingColumnRuleError` | a rules object omits a column |
+| `UnknownColumnRuleError` | a rules object names a column the table does not have |
+| `UnknownCountTableError` | `counts` names a table the schema does not have |
+| `MissingParentCountError` | a foreign key's parent table has no count |
+| `InvalidPerParentError` | a `per` count names the table itself, a table it does not reference, or one it references twice |
+| `NotNullSelfReferenceError` | a `NOT NULL` foreign key points at its own table |
+| `EmptyParentPoolError` | a `NOT NULL` foreign key's parent generated no rows |
+| `ColumnOrderError` | a `derive` rule reads a column generated later in the row |
+| `UniqueValueExhaustedError` | `unique()` ran out of attempts |
+| `UniqueConstraintExhaustedError` | a unique constraint's value space is smaller than the row count |
+| `UnserialisableValueError` | a value cannot be written to a bulk file, naming the column |
+| `AmbiguousRelationshipError` | `childrenOf` has more than one foreign key to choose between |
+| `OutputDirectoryNotEmptyError` | a file sink's output directory already holds something |
+| `DeferredUpdatesUnsupportedError` | a cyclic schema meets a sink which cannot apply deferred updates |
+
+Errors raised once generation has started carry the `seed` in their message, so a failure can be
+replayed exactly. The two bulk serialisers are pure functions and name the column instead.
 
 ## Comparison with drizzle-seed
 

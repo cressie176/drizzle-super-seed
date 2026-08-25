@@ -32,6 +32,7 @@ import {
   TriggerHandling,
   constant,
   createInMemoryGraphSink,
+  createMariaDbSqlFileSink,
   createPostgresSqlFileSink,
   createPostgresSqlStreamSink,
   createRowBatchSink,
