@@ -695,6 +695,7 @@ row is generated.
 
 | Error | Raised when |
 |---|---|
+| `InvalidGeneratorConfigurationError` | a generator's arguments cannot describe a distribution, naming the factory |
 | `UnsupportedColumnTypeError` | a column's type has no generator, naming the drizzle type |
 | `UnsupportedRelationshipError` | a foreign key spans more than one column |
 | `IncompleteSchemaError` | a foreign key points at a table missing from the schema module |
@@ -720,7 +721,19 @@ row is generated.
 | `DeferredUpdatesUnsupportedError` | a cyclic schema meets a sink which cannot apply deferred updates |
 
 Errors raised once generation has started carry the `seed` in their message, so a failure can be
-replayed exactly. The two bulk serialisers are pure functions and name the column instead.
+replayed exactly. The two bulk serialisers are pure functions and name the column instead, and
+`InvalidGeneratorConfigurationError` carries no seed either: it is raised by a generator factory
+when your rules file is loaded, before any run exists, so the stack trace points at the mistake.
+
+```ts
+weightedPick({ a: 1, b: -1, c: 1 });
+// InvalidGeneratorConfigurationError: weightedPick was given the weight -1, which breaks the
+// running totals it draws from and makes the distribution a constant. Every weight must be zero
+// or more.
+```
+
+Without that check the call above emits `'c'` on every row — a plausible value, in range, and wrong
+in a way no database can detect.
 
 ## Comparison with drizzle-seed
 
