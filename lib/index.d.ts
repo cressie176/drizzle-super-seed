@@ -316,6 +316,12 @@ export enum TriggerHandling {
   LeaveEnabled = 'LeaveEnabled',
 }
 
+export function createCsvFileSink(options: {
+  directory: string;
+  header?: boolean;
+  nullToken?: string;
+}): GenerationSink<GenerationReport>;
+
 export function createMariaDbSqlFileSink(options: {
   directory: string;
   rowsPerStatement?: number;

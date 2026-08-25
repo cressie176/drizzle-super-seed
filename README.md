@@ -33,6 +33,7 @@ drizzle-super-seed separates data generation from its output. The same rules can
   - [PostgreSQL files](#createpostgressqlfilesink-bulk-load)
   - [PostgreSQL stream](#createpostgressqlstreamsink-streaming-bulk-load)
   - [MariaDB files](#createmariadbsqlfilesink-bulk-load)
+  - [CSV files](#createcsvfilesink-any-loader)
   - [Custom sinks](#custom-sinks)
 - [Schema support](#schema-support)
   - [Databases](#databases)
@@ -623,9 +624,26 @@ Differences from the PostgreSQL sink, all following from MySQL rather than from 
 
 String values are written as single-quoted literals with `'` doubled and backslash, newline, carriage return, tab and NUL backslash-escaped. That is correct under MySQL's default `sql_mode`, and the escaping is proved against a real server rather than only against its own expectations. A server running **`NO_BACKSLASH_ESCAPES`** reads those escapes literally and would load such values corrupted, silently, since nothing is rejected. `mysqldump` output has exactly the same exposure; if your target runs that mode, load through a client session which does not.
 
+### createCsvFileSink: any loader
+
+Use the CSV sink when the consumer is not a SQL client at all: `COPY ... WITH (FORMAT csv)`, `LOAD DATA INFILE`, a spreadsheet, or an ETL tool. It writes one RFC 4180 file per table, numbered so lexical order is dependency order, plus a `manifest.json` recording the seed; there is no orchestrator and no finalise file, since there is no universal CSV loader to script. The sink declares no dialect, so any schema may use it.
+
+```ts
+await generate({ schema, rules, counts }, createCsvFileSink({ directory: './out' }));
+```
+
+The format is chosen so the same files load into either database:
+
+- The first line is a header of database column names; pass `header: false` to omit it (use `HEADER true` in COPY, or `IGNORE 1 LINES` in LOAD DATA, when it is present).
+- NULL is a bare empty field and the empty string is a quoted one, which is exactly the distinction `FORMAT csv` makes; set `nullToken` (for example to `\N`, LOAD DATA's default) when the loader expects a marker, and a genuine value equal to the token is quoted to stay a value.
+- Booleans are 1 and 0, valid input to a PostgreSQL `boolean` and a MariaDB `tinyint(1)` alike; `true` would not survive the second.
+- Timestamps are `YYYY-MM-DD HH:MM:SS.mmm`, space separated with no zone suffix, because MariaDB rejects an offset. The instants are UTC: load with the session time zone set to UTC.
+
+A cyclic schema needs deferred updates, which a CSV file cannot express, so it is rejected with DeferredUpdatesUnsupportedError before anything is written. The escaping is proved by loading awkward values through a real `COPY ... FORMAT csv` and comparing them back as hex.
+
 ### Custom sinks
 
-Implement `GenerationSink` when the built-in outputs do not fit. A custom sink could write NDJSON or CSV, publish to a queue, or load another database.
+Implement `GenerationSink` when the built-in outputs do not fit. A custom sink could write NDJSON, publish to a queue, or load another database.
 
 ```ts
 import type { GenerationSink, GenerationReport } from 'drizzle-super-seed';
@@ -652,6 +670,7 @@ Most of the library is database-agnostic. The in-memory graph sink needs no data
 |--------------------|------------------|------------------------|--------|
 | Schema adapter     | ✓                | ✓                      | ✓      |
 | Bulk SQL file sink | ✓ (COPY, psql) | ✓ (extended INSERT)  | none   |
+| CSV file sink | ✓ | ✓ | ✓ |
 
 The dialect is detected from the schema module. Using an incompatible file sink produces a validation error before generation starts.
 

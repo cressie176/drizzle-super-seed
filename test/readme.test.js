@@ -32,6 +32,7 @@ import {
   IdentifierCasing,
   TriggerHandling,
   constant,
+  createCsvFileSink,
   createInMemoryGraphSink,
   createMariaDbSqlFileSink,
   createPostgresSqlFileSink,
