@@ -15,11 +15,20 @@ declare const untyped: DataGraph;
 // A generated row carries every column, the GENERATED ALWAYS AS IDENTITY key included, so the
 // row type is `$inferSelect` rather than the insert shape which omits it.
 type ParkRow = (typeof typed.rows.parks)[number];
+type PitchRow = (typeof typed.rows.pitches)[number];
 export type IdIsPresentAndNotOptional = Expect<Exactly<ParkRow['id'], number>>;
 export type NullableColumnKeepsItsNull = Expect<Exactly<ParkRow['latitude'], number | null>>;
 export type DefaultedColumnIsNotOptional = Expect<Exactly<ParkRow['active'], boolean>>;
 export type DateColumnStaysAString = Expect<Exactly<ParkRow['openedAt'], string>>;
 export type TimestampColumnStaysADate = Expect<Exactly<ParkRow['createdAt'], Date>>;
+
+// Navigation properties come from the schema's relations() declarations: a many() is an array of
+// the target's rows, a one() over a NOT NULL column is a row, and both are recursively navigable.
+export type ManyIsAnArrayOfChildRows = Expect<Exactly<ParkRow['pitches'][number]['reference'], string>>;
+export type OneOverNotNullIsARow = Expect<Exactly<PitchRow['park']['name'], string>>;
+export type NavigationRecurses = Expect<
+  Exactly<ParkRow['pitches'][number]['park']['pitches'][number]['areaSqm'], number | null>
+>;
 
 // Non-table exports are filtered out of the rows, exactly as they are out of the rules.
 export type RowKeysAreTablesOnly = Expect<Exactly<keyof typeof typed.rows, 'parks' | 'pitches'>>;

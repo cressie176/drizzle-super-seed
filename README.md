@@ -441,18 +441,29 @@ Pass a sink as the second argument to `generate(config, sink)`. The return value
 
 ### createInMemoryGraphSink: unit tests
 
-Use the in-memory graph when a test does not need a database. It returns every generated row and provides helpers for navigating relationships:
+Use the in-memory graph when a test does not need a database. It returns every generated row, and when the schema module declares Drizzle [relations()](https://orm.drizzle.team/docs/relations), the rows are already wired together:
 
 ```ts
 const data = await generate({ schema, rules, counts }, createInMemoryGraphSink<typeof schema>());
 
-const pitch = data.rows.pitches[0];
-const park = data.parentOf<'parks'>('pitches', pitch, 'parkId');   // the exact park row, or null
-if (!park) throw new Error('every pitch has a park');
-const pitches = data.childrenOf('parks', park, 'pitches');         // all of that park's pitches
+const park = data.rows.parks[0];
+park.pitches[0].holidayHomes[0].owner.fullName;   // walk the graph in either direction
+park.pitches[0].park === park;                    // the same row objects, not copies
 ```
 
-Passing the schema type, `createInMemoryGraphSink<typeof schema>()`, types the rows: `data.rows.pitches` is a `pitches` row array, `park.name` is a `string`, and a misspelt table or column is a compile error. Rows carry every column, including a `GENERATED ALWAYS AS IDENTITY` key, so the row type is Drizzle's `$inferSelect`.
+Navigation properties follow the relations declarations exactly as `db.query` does: a `many()` is an array of child rows, a `one()` is the parent row (or `null` when its foreign key column is nullable), the names are the ones the declarations chose, and two tables related twice are told apart by `relationName`. A `many()` with no inverse `one({ fields, references })` on the other table cannot be resolved, exactly as in Drizzle's query API; the row still generates, and walking that property throws `UnresolvableRelationError` saying what to declare.
+
+The wiring costs nothing until walked and is invisible to everything else: navigation properties are lazy and non-enumerable, so cyclic schemas are safe and rows still `JSON.stringify`, `deepEqual` and snapshot as plain data. A relation whose name collides with a column keeps the column.
+
+Passing the schema type, `createInMemoryGraphSink<typeof schema>()`, types all of it: `data.rows.pitches` is a `pitches` row array, `park.pitches[0].park.name` is a `string`, and a misspelt table, column or relation is a compile error. Rows carry every column, including a `GENERATED ALWAYS AS IDENTITY` key, so the row type is Drizzle's `$inferSelect`.
+
+For schemas which declare no relations, `parentOf` and `childrenOf` navigate by foreign key instead:
+
+```ts
+const pitch = data.rows.pitches[0];
+const parent = data.parentOf<'parks'>('pitches', pitch, 'parkId');   // the exact park row, or null
+const pitches = parent ? data.childrenOf('parks', parent, 'pitches') : [];
+```
 
 `childrenOf` knows the child table from its last argument. `parentOf` cannot: which table a foreign key points at is not recorded in any Drizzle type, so name it (`parentOf<'parks'>(...)`) or accept a row of any table in the schema. Without the schema type argument the graph is string-keyed and its rows are `Record<string, unknown>`, exactly as before.
 
@@ -748,6 +759,7 @@ row is generated.
 | UniqueConstraintExhaustedError | a unique constraint's value space is smaller than the row count |
 | UnserialisableValueError | a value cannot be written to a bulk file, naming the column |
 | AmbiguousRelationshipError | childrenOf has more than one foreign key to choose between |
+| UnresolvableRelationError | a walked navigation property's relations() declaration has no usable inverse |
 | OutputDirectoryNotEmptyError | a file sink's output directory already holds something |
 | TooManyOutputFilesError | a run needs more numbered files than the sequence has room for |
 | DeferredUpdatesUnsupportedError | a cyclic schema meets a sink which cannot apply deferred updates |

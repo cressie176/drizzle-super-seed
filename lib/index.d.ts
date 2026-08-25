@@ -61,9 +61,27 @@ export enum Dialect {
   Sqlite = 'Sqlite',
 }
 
+export type CanonicalRelation =
+  | {
+      tableKey: string;
+      name: string;
+      kind: 'one' | 'many';
+      foreignTableKey: string;
+      localColumns: string[];
+      foreignColumns: string[];
+    }
+  | {
+      tableKey: string;
+      name: string;
+      kind: 'one' | 'many';
+      foreignTableKey?: string;
+      error: 'noInverse' | 'ambiguousInverse' | 'unknownTable';
+    };
+
 export interface CanonicalSchema {
   dialect: Dialect;
   tables: Map<string, CanonicalTable>;
+  relations: CanonicalRelation[];
 }
 
 export enum IdentifierCasing {
@@ -133,6 +151,7 @@ export interface DeferredUpdate {
 }
 
 export interface GenerationSink<TResult> {
+  prepare?(schema: CanonicalSchema): Promise<void> | void;
   beginTable?(table: CanonicalTable): Promise<void> | void;
   writeRows(table: CanonicalTable, rows: Record<string, unknown>[]): Promise<void> | void;
   endTable?(table: CanonicalTable): Promise<void> | void;
@@ -169,11 +188,77 @@ type SchemaTableKey<TSchema> = {
 // graph it always did. The tuple stops `never` distributing, which would make the check vacuous.
 type UntypedSchema<TSchema> = [SchemaTableKey<TSchema>] extends [never] ? true : false;
 
+// The structural shape of a `relations()` declaration and its entries, matched without importing
+// drizzle types for the reason established on SchemaRules: drizzle ships separate declarations for
+// import and require resolution, and naming its types here would break one of them. `$brand` and
+// `referencedTableName` are public members of drizzle's own classes; `isNullable` exists only on
+// `One`, which is what separates a single row from an array.
+interface DeclaredRelation {
+  $brand: 'Relation';
+  referencedTableName: string;
+}
+
+interface DeclaredRelations {
+  $brand: 'Relations';
+  table: { _: { name: string } };
+  config: (helpers: never) => Record<string, DeclaredRelation>;
+}
+
+type DeclaredTableName<TTable> = TTable extends { _: { name: infer TName extends string } } ? TName : never;
+
+type UnionToIntersection<TUnion> = (TUnion extends unknown ? (member: TUnion) => void : never) extends (
+  intersected: infer TIntersection,
+) => void
+  ? TIntersection
+  : never;
+
+type DeclaredRelationsFor<TSchema, TName extends string> = UnionToIntersection<
+  {
+    [K in keyof TSchema]: TSchema[K] extends DeclaredRelations
+      ? DeclaredTableName<TSchema[K]['table']> extends TName
+        ? ReturnType<TSchema[K]['config']>
+        : never
+      : never;
+  }[keyof TSchema]
+>;
+
+type TableKeyByName<TSchema, TName extends string> = {
+  [K in keyof TSchema]: TSchema[K] extends SelectableTable
+    ? DeclaredTableName<TSchema[K]> extends TName
+      ? K
+      : never
+    : never;
+}[keyof TSchema];
+
+type NavigationTarget<TSchema, TRelation> = TRelation extends { referencedTableName: infer TName extends string }
+  ? GraphRow<TSchema, TableKeyByName<TSchema, TName>>
+  : never;
+
+// drizzle's `One.isNullable` is inverted from its name: the helper computes it as
+// Equal<notNull, true>, and drizzle's own query types add `null` when it is *false*. Followed
+// here so a one() over a NOT NULL foreign key navigates without a null check, exactly as it
+// does in db.query results.
+type NavigationProperty<TSchema, TRelation> = TRelation extends { isNullable: boolean }
+  ? TRelation extends { isNullable: true }
+    ? NavigationTarget<TSchema, TRelation>
+    : NavigationTarget<TSchema, TRelation> | null
+  : NavigationTarget<TSchema, TRelation>[];
+
+// A relation whose name collides with a column keeps the column, at runtime and here.
+type NavigationOf<TSchema, TKey, TRow> = DeclaredRelationsFor<
+  TSchema,
+  DeclaredTableName<TSchema[TKey & keyof TSchema]>
+> extends infer TConfig
+  ? [TConfig] extends [never]
+    ? unknown
+    : { readonly [N in Exclude<keyof TConfig, keyof TRow>]: NavigationProperty<TSchema, TConfig[N]> }
+  : never;
+
 export type GraphRow<TSchema, TKey> = UntypedSchema<TSchema> extends true
   ? Record<string, unknown>
   : TKey extends keyof TSchema
     ? TSchema[TKey] extends SelectableTable
-      ? TSchema[TKey]['$inferSelect']
+      ? TSchema[TKey]['$inferSelect'] & NavigationOf<TSchema, TKey, TSchema[TKey]['$inferSelect']>
       : never
     : never;
 

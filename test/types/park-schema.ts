@@ -36,3 +36,7 @@ export const pitches = pgTable('pitches', {
 });
 
 export const parkRelations = relations(parks, ({ many }) => ({ pitches: many(pitches) }));
+
+export const pitchRelations = relations(pitches, ({ one }) => ({
+  park: one(parks, { fields: [pitches.parkId], references: [parks.id] }),
+}));

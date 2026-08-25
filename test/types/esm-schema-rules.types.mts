@@ -4,7 +4,7 @@
 // resolution, leaving `{}` — which accepts any rules object at all, silently.
 import { relations } from 'drizzle-orm';
 import { integer, pgEnum, pgTable, text } from 'drizzle-orm/pg-core';
-import { structuralDefault, type SchemaRules } from 'drizzle-super-seed';
+import { structuralDefault, type DataGraph, type SchemaRules } from 'drizzle-super-seed';
 
 const region = pgEnum('region', ['north', 'south']);
 
@@ -22,8 +22,16 @@ const pitches = pgTable('pitches', {
 
 const parkRelations = relations(parks, ({ many }) => ({ pitches: many(pitches) }));
 
+const pitchRelations = relations(pitches, ({ one }) => ({
+  park: one(parks, { fields: [pitches.parkId], references: [parks.id] }),
+}));
+
 // The enum and the relations belong in a real schema module and must not become required keys.
-const schema = { parks, pitches, region, parkRelations };
+const schema = { parks, pitches, region, parkRelations, pitchRelations };
+
+// Navigation types resolve under ESM module resolution too, since they import nothing from drizzle.
+declare const graph: DataGraph<typeof schema>;
+export const navigated: string = graph.rows.parks[0].pitches[0].park.name;
 
 export const complete = {
   parks: { id: structuralDefault, name: structuralDefault },

@@ -25,12 +25,21 @@ test('a cancelled letting is excluded from the invoice', async () => {
 test('every letting navigates to its holiday home, and every park to its pitches', async () => {
   const data = await generateGraph();
 
+  // The schema declares relations(), so the rows arrive pre-wired: no joining by hand.
   for (const letting of data.rows.lettings) {
-    const home = data.parentOf<'holidayHomes'>('lettings', letting, 'holidayHomeId');
-    assert.equal(home?.id, letting.holidayHomeId);
+    assert.equal(letting.holidayHome.id, letting.holidayHomeId);
   }
   const [park] = data.rows.parks;
-  assert.ok(data.childrenOf('parks', park, 'pitches').length > 0);
+  assert.ok(park.pitches.length > 0);
+  assert.equal(park.pitches[0].park, park);
+});
+
+test('the deep walk a domain assertion actually needs', async () => {
+  const data = await generateGraph();
+  const [letting] = data.rows.lettings;
+
+  assert.equal(typeof letting.holidayHome.owner.fullName, 'string');
+  assert.equal(letting.holidayHome.pitch.park.name, data.rows.parks[0].name);
 });
 
 test('names and emails are realistic, not word soup', async () => {

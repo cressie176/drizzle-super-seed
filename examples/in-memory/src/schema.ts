@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
   bigserial,
@@ -65,3 +66,23 @@ export const lettings = pgTable('lettings', {
   startDate: date('start_date').notNull(),
   cleaningFee: numeric('cleaning_fee', { precision: 8, scale: 2 }).notNull(),
 });
+
+// The relations power the graph sink's navigation: park.pitches, letting.holidayHome.owner.
+export const parkRelations = relations(parks, ({ many }) => ({ pitches: many(pitches) }));
+
+export const pitchRelations = relations(pitches, ({ one, many }) => ({
+  park: one(parks, { fields: [pitches.parkId], references: [parks.id] }),
+  holidayHomes: many(holidayHomes),
+}));
+
+export const ownerRelations = relations(owners, ({ many }) => ({ holidayHomes: many(holidayHomes) }));
+
+export const holidayHomeRelations = relations(holidayHomes, ({ one, many }) => ({
+  pitch: one(pitches, { fields: [holidayHomes.pitchId], references: [pitches.id] }),
+  owner: one(owners, { fields: [holidayHomes.ownerId], references: [owners.id] }),
+  lettings: many(lettings),
+}));
+
+export const lettingRelations = relations(lettings, ({ one }) => ({
+  holidayHome: one(holidayHomes, { fields: [lettings.holidayHomeId], references: [holidayHomes.id] }),
+}));
