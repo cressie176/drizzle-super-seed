@@ -698,6 +698,7 @@ row is generated.
 | `UnserialisableValueError` | a value cannot be written to a bulk file, naming the column |
 | `AmbiguousRelationshipError` | `childrenOf` has more than one foreign key to choose between |
 | `OutputDirectoryNotEmptyError` | a file sink's output directory already holds something |
+| `TooManyOutputFilesError` | a run needs more numbered files than the sequence has room for |
 | `DeferredUpdatesUnsupportedError` | a cyclic schema meets a sink which cannot apply deferred updates |
 
 Errors raised once generation has started carry the `seed` in their message, so a failure can be
