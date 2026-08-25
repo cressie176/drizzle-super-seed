@@ -17,13 +17,13 @@ const HEAP_CEILING = 512 * MEGABYTE;
 const COUNTS = { parks: 2, owners: 4, pitches: 3, holidayHomes: 3, accessories: 2, lettings: 3, parkOwners: 2 };
 
 const NUMBERED = [
-  '010_parks.sql',
-  '020_pitches.sql',
-  '030_owners.sql',
-  '040_holidayHomes.sql',
-  '050_accessories.sql',
-  '060_lettings.sql',
-  '070_parkOwners.sql',
+  '0010_parks.sql',
+  '0020_pitches.sql',
+  '0030_owners.sql',
+  '0040_holidayHomes.sql',
+  '0050_accessories.sql',
+  '0060_lettings.sql',
+  '0070_parkOwners.sql',
 ];
 
 const structuralRules = (schema) =>
@@ -65,18 +65,18 @@ describe('mariadb sql file sink', () => {
 
   describe('the files it writes', () => {
     it('writes one numbered file per table, a finalise file, an orchestrator and a manifest', async () => {
-      deq((await readdir(directory)).sort(), [...NUMBERED, '900_finalise.sql', 'load.mysql', 'manifest.json']);
+      deq((await readdir(directory)).sort(), [...NUMBERED, '9000_finalise.sql', 'load.mysql', 'manifest.json']);
     });
 
     it('numbers the files so lexical order is dependency order', async () => {
       deq(
-        (await readdir(directory)).filter((file) => /^\d{3}_/.test(file) && file !== '900_finalise.sql').sort(),
+        (await readdir(directory)).filter((file) => /^\d{4}_/.test(file) && file !== '9000_finalise.sql').sort(),
         NUMBERED,
       );
     });
 
     it('makes each table file self contained', async () => {
-      const parks = await read(directory, '010_parks.sql');
+      const parks = await read(directory, '0010_parks.sql');
 
       ok(parks.startsWith('START TRANSACTION;\nSET foreign_key_checks = 0;\nSET unique_checks = 0;\n'));
       ok(parks.includes('INSERT INTO `parks` (`id`, `name`'));
@@ -91,7 +91,7 @@ describe('mariadb sql file sink', () => {
       const empty = await temporaryDirectory();
       await generateInto(empty, { counts: { parks: 0 } });
 
-      eq(await read(empty, '010_parks.sql'), 'START TRANSACTION;\nCOMMIT;\n');
+      eq(await read(empty, '0010_parks.sql'), 'START TRANSACTION;\nCOMMIT;\n');
       await rm(empty, { recursive: true, force: true });
     });
   });
@@ -100,7 +100,7 @@ describe('mariadb sql file sink', () => {
     it('chunks the rows into statements of its own size, whatever the batch size', async () => {
       const chunked = await temporaryDirectory();
       await generateInto(chunked, { counts: { parks: 5 }, batchSize: 2, rowsPerStatement: 2 });
-      const parks = await read(chunked, '010_parks.sql');
+      const parks = await read(chunked, '0010_parks.sql');
 
       eq(parks.split('INSERT INTO').length - 1, 3);
       eq(parks.split('),\n').length - 1, 2);
@@ -111,7 +111,7 @@ describe('mariadb sql file sink', () => {
       const single = await temporaryDirectory();
       await generateInto(single, { counts: { parks: 5 }, batchSize: 2, rowsPerStatement: 1000 });
 
-      eq((await read(single, '010_parks.sql')).split('INSERT INTO').length - 1, 1);
+      eq((await read(single, '0010_parks.sql')).split('INSERT INTO').length - 1, 1);
       await rm(single, { recursive: true, force: true });
     });
   });
@@ -120,7 +120,7 @@ describe('mariadb sql file sink', () => {
     it('sources every numbered file once, in order', async () => {
       eq(
         await read(directory, 'load.mysql'),
-        `${[...NUMBERED, '900_finalise.sql'].map((file) => `source ${file};`).join('\n')}\n`,
+        `${[...NUMBERED, '9000_finalise.sql'].map((file) => `source ${file};`).join('\n')}\n`,
       );
     });
 
@@ -134,7 +134,7 @@ describe('mariadb sql file sink', () => {
 
   describe('the finalise file', () => {
     it('analyses every table it generated, and fixes up no sequence', async () => {
-      const finalise = await read(directory, '900_finalise.sql');
+      const finalise = await read(directory, '9000_finalise.sql');
 
       eq(finalise.split('ANALYZE TABLE').length - 1, Object.keys(COUNTS).length);
       ok(finalise.includes('ANALYZE TABLE `holiday_homes`;'));
@@ -205,7 +205,7 @@ describe('mariadb sql file sink', () => {
           end: (finished) => sink.end(finished),
         },
       );
-      const { size } = await stat(join(large, '010_readings.sql'));
+      const { size } = await stat(join(large, '0010_readings.sql'));
 
       eq(report.rowCounts.readings, 1_000_000);
       ok(size > 10 * MEGABYTE);

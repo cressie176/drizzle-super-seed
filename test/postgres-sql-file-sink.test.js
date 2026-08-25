@@ -22,15 +22,15 @@ const COUNTS = {
 };
 
 const NUMBERED = [
-  '010_owners.sql',
-  '020_parks.sql',
-  '030_pitches.sql',
-  '040_holidayHomes.sql',
-  '050_accessories.sql',
-  '060_lettings.sql',
-  '070_parkOwners.sql',
-  '080_staff.sql',
-  '090_deferred_parks_warden_id.sql',
+  '0010_owners.sql',
+  '0020_parks.sql',
+  '0030_pitches.sql',
+  '0040_holidayHomes.sql',
+  '0050_accessories.sql',
+  '0060_lettings.sql',
+  '0070_parkOwners.sql',
+  '0080_staff.sql',
+  '0090_deferred_parks_warden_id.sql',
 ];
 
 const temporaryDirectory = () => mkdtemp(join(tmpdir(), 'drizzle-super-seed-'));
@@ -65,20 +65,20 @@ describe('postgres sql file sink', () => {
 
   describe('the files it writes', () => {
     it('writes one numbered file per table, a finalise file, an orchestrator and a manifest', async () => {
-      deq((await readdir(directory)).sort(), [...NUMBERED, '900_finalise.sql', 'load.psql', 'manifest.json']);
+      deq((await readdir(directory)).sort(), [...NUMBERED, '9000_finalise.sql', 'load.psql', 'manifest.json']);
     });
 
     it('numbers the files so lexical order is dependency order', async () => {
-      const numbered = (await readdir(directory)).filter((file) => /^\d{3}_/.test(file)).sort();
+      const numbered = (await readdir(directory)).filter((file) => /^\d{4}_/.test(file)).sort();
 
       deq(
-        numbered.slice(0, -2).map((file) => file.replace(/^\d{3}_|\.sql$/g, '')),
+        numbered.slice(0, -2).map((file) => file.replace(/^\d{4}_|\.sql$/g, '')),
         ['owners', 'parks', 'pitches', 'holidayHomes', 'accessories', 'lettings', 'parkOwners', 'staff'],
       );
     });
 
     it('makes each table file self contained', async () => {
-      const parks = await read(directory, '020_parks.sql');
+      const parks = await read(directory, '0020_parks.sql');
 
       ok(parks.startsWith('BEGIN;\nSET session_replication_role = replica;\nCOPY "public"."parks" ('));
       ok(parks.includes(') FROM stdin;\n'));
@@ -86,7 +86,7 @@ describe('postgres sql file sink', () => {
     });
 
     it('names the columns as the database names them, quoted', async () => {
-      const parks = await read(directory, '020_parks.sql');
+      const parks = await read(directory, '0020_parks.sql');
 
       ok(
         parks.includes(
@@ -96,7 +96,7 @@ describe('postgres sql file sink', () => {
     });
 
     it('writes one tab separated line per row', async () => {
-      const lines = (await read(directory, '020_parks.sql')).split('\n');
+      const lines = (await read(directory, '0020_parks.sql')).split('\n');
       const rows = lines.slice(3, 3 + COUNTS.parks);
 
       eq(rows.length, 2);
@@ -107,12 +107,12 @@ describe('postgres sql file sink', () => {
       const empty = await temporaryDirectory();
       await generateInto(empty, { counts: { parks: 0 } });
 
-      eq(await read(empty, '010_parks.sql'), await emptyParksBlock());
+      eq(await read(empty, '0010_parks.sql'), await emptyParksBlock());
       await rm(empty, { recursive: true, force: true });
     });
 
     const emptyParksBlock = async () => {
-      const parks = await read(directory, '020_parks.sql');
+      const parks = await read(directory, '0020_parks.sql');
       const header = parks.split(') FROM stdin;\n')[0];
       return `${header}) FROM stdin;\n\\.\nCOMMIT;\n`;
     };
@@ -122,7 +122,7 @@ describe('postgres sql file sink', () => {
     it('stops on the first error and includes every numbered file once, in order', async () => {
       eq(
         await read(directory, 'load.psql'),
-        ['\\set ON_ERROR_STOP on', ...[...NUMBERED, '900_finalise.sql'].map((file) => `\\ir ${file}`), ''].join('\n'),
+        ['\\set ON_ERROR_STOP on', ...[...NUMBERED, '9000_finalise.sql'].map((file) => `\\ir ${file}`), ''].join('\n'),
       );
     });
 
@@ -134,7 +134,7 @@ describe('postgres sql file sink', () => {
 
   describe('the finalise file', () => {
     it('sets one sequence per sequence owned column', async () => {
-      const finalise = await read(directory, '900_finalise.sql');
+      const finalise = await read(directory, '9000_finalise.sql');
 
       ok(finalise.includes(`SELECT setval(pg_get_serial_sequence('"public"."parks"', 'id'),`));
       ok(finalise.includes(`SELECT setval(pg_get_serial_sequence('"public"."pitches"', 'id'),`));
@@ -144,21 +144,21 @@ describe('postgres sql file sink', () => {
     });
 
     it('sets no sequence for a uuid key or a composite key', async () => {
-      const finalise = await read(directory, '900_finalise.sql');
+      const finalise = await read(directory, '9000_finalise.sql');
 
       ok(!finalise.includes('"public"."owners"'));
       ok(!finalise.includes('"public"."park_owners"'));
     });
 
     it('analyses after committing', async () => {
-      ok((await read(directory, '900_finalise.sql')).endsWith('COMMIT;\nANALYZE;\n'));
+      ok((await read(directory, '9000_finalise.sql')).endsWith('COMMIT;\nANALYZE;\n'));
     });
 
     it('is written even when nothing owns a sequence', async () => {
       const uuidOnly = await temporaryDirectory();
       await generateInto(uuidOnly, { counts: { owners: 2 } });
 
-      eq(await read(uuidOnly, '900_finalise.sql'), 'BEGIN;\nCOMMIT;\nANALYZE;\n');
+      eq(await read(uuidOnly, '9000_finalise.sql'), 'BEGIN;\nCOMMIT;\nANALYZE;\n');
       await rm(uuidOnly, { recursive: true, force: true });
     });
   });
@@ -211,7 +211,7 @@ describe('postgres sql file sink', () => {
       const nested = join(parent, 'generated', 'sql');
       await generateInto(nested, { counts: { parks: 1 } });
 
-      ok((await readdir(nested)).includes('010_parks.sql'));
+      ok((await readdir(nested)).includes('0010_parks.sql'));
       await rm(parent, { recursive: true, force: true });
     });
 
@@ -249,7 +249,7 @@ describe('postgres sql file sink', () => {
       const manifest = JSON.parse(await read(invented, 'manifest.json'));
       await generateInto(replayed, { seed: manifest.seed, referenceDate: new Date(manifest.referenceDate) });
 
-      eq(await read(replayed, '020_parks.sql'), await read(invented, '020_parks.sql'));
+      eq(await read(replayed, '0020_parks.sql'), await read(invented, '0020_parks.sql'));
       await rm(invented, { recursive: true, force: true });
       await rm(replayed, { recursive: true, force: true });
     });

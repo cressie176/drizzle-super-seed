@@ -520,10 +520,10 @@ The generated directory contains:
 ```
 docker/initdb/
   load.psql              # loads the files into a remote database
-  010_parks.sql          # one file per table, in foreign-key-safe order
-  020_pitches.sql
+  0010_parks.sql          # one file per table, in foreign-key-safe order
+  0020_pitches.sql
   ...
-  900_finalise.sql       # updates sequences and runs ANALYZE
+  9000_finalise.sql       # updates sequences and runs ANALYZE
   manifest.json          # records how the dataset was generated
 ```
 
@@ -554,7 +554,7 @@ By default, each table file sets `session_replication_role = replica` for its se
 
 This setting requires superuser rights, which managed services such as RDS, Cloud SQL and Neon do not normally provide. Set `triggerHandling: TriggerHandling.LeaveEnabled` to keep triggers and foreign key checks enabled. The load will remain correct, but will be slower.
 
-`900_finalise.sql` moves every sequence beyond its highest generated ID and runs `ANALYZE`. Subsequent inserts therefore receive unused IDs, and the query planner receives statistics for the loaded data.
+`9000_finalise.sql` moves every sequence beyond its highest generated ID and runs `ANALYZE`. Subsequent inserts therefore receive unused IDs, and the query planner receives statistics for the loaded data.
 
 The files must be run by `psql`, or by the Docker entrypoint which uses it. Inline `COPY ... FROM stdin` is a `psql` capability rather than generic SQL which a database driver can execute.
 
@@ -593,7 +593,7 @@ Both PostgreSQL sinks generate rows as a stream, so memory use remains broadly c
 ### createMariaDbSqlFileSink: bulk load
 
 The MariaDB equivalent of the PostgreSQL file sink. It writes numbered, self-contained table files
-of extended `INSERT` statements, a `900_finalise.sql` running `ANALYZE TABLE`, a `load.mysql`
+of extended `INSERT` statements, a `9000_finalise.sql` running `ANALYZE TABLE`, a `load.mysql`
 orchestrator, and a `manifest.json`.
 
 ```ts
