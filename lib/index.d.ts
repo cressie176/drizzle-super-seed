@@ -106,10 +106,16 @@ export interface GenerationReport {
   durationMs: number;
 }
 
+export interface DeferredUpdate {
+  primaryKey: Record<string, unknown>;
+  values: Record<string, unknown>;
+}
+
 export interface GenerationSink<TResult> {
   beginTable?(table: CanonicalTable): Promise<void> | void;
   writeRows(table: CanonicalTable, rows: Record<string, unknown>[]): Promise<void> | void;
   endTable?(table: CanonicalTable): Promise<void> | void;
+  writeDeferredUpdates?(table: CanonicalTable, updates: DeferredUpdate[]): Promise<void> | void;
   end(report: GenerationReport): TResult | Promise<TResult>;
 }
 
@@ -153,7 +159,19 @@ export interface RowBatch {
 
 export type RowBatchHandler = (batch: RowBatch) => Promise<void> | void;
 
-export function createRowBatchSink(handler: RowBatchHandler): GenerationSink<GenerationReport>;
+export interface DeferredUpdateBatch {
+  tableKey: string;
+  table: unknown;
+  columnNames: string[];
+  updates: DeferredUpdate[];
+}
+
+export type DeferredUpdateBatchHandler = (batch: DeferredUpdateBatch) => Promise<void> | void;
+
+export function createRowBatchSink(
+  handler: RowBatchHandler,
+  deferredUpdateHandler?: DeferredUpdateBatchHandler,
+): GenerationSink<GenerationReport>;
 
 export enum TriggerHandling {
   DisableDuringLoad = 'DisableDuringLoad',

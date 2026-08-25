@@ -104,8 +104,15 @@ const expectedParkSchema = new Map([
         hasDatabaseDefault: true,
         withTimezone: true,
       }),
+      column({
+        name: 'warden_id',
+        propertyName: 'wardenId',
+        kind: ColumnKind.Integer,
+        jsType: 'number',
+        maxValue: INTEGER_MAX,
+      }),
     ],
-    { primaryKey: ['id'] },
+    { primaryKey: ['id'], foreignKeys: [references('warden_id', 'staff', 'id')] },
   ),
   table(
     'pitches',
@@ -388,6 +395,40 @@ const expectedParkSchema = new Map([
       foreignKeys: [references('park_id', 'parks', 'id'), references('owner_id', 'owners', 'id')],
     },
   ),
+  table(
+    'staff',
+    'staff',
+    [
+      column({
+        name: 'id',
+        propertyName: 'id',
+        kind: ColumnKind.Integer,
+        jsType: 'number',
+        maxValue: INTEGER_MAX,
+        notNull: true,
+        hasDatabaseDefault: true,
+        isPrimaryKey: true,
+        sequenceOwned: true,
+      }),
+      column({
+        name: 'park_id',
+        propertyName: 'parkId',
+        kind: ColumnKind.Integer,
+        jsType: 'number',
+        maxValue: INTEGER_MAX,
+        notNull: true,
+      }),
+      column({
+        name: 'full_name',
+        propertyName: 'fullName',
+        kind: ColumnKind.Text,
+        jsType: 'string',
+        notNull: true,
+        maxLength: 200,
+      }),
+    ],
+    { primaryKey: ['id'], foreignKeys: [references('park_id', 'parks', 'id')] },
+  ),
 ]);
 
 const namesOf = (canonical, key) => canonical.tables.get(key).columns.map((each) => each.name);
@@ -593,11 +634,12 @@ describe('drizzle schema adapter', () => {
       const parkRelations = relations(parkSchema.parks, ({ many }) => ({ pitches: many(parkSchema.pitches) }));
       const schema = {
         parks: parkSchema.parks,
+        staff: parkSchema.staff,
         lettingStatus: parkSchema.lettingStatus,
         parkRelations,
         version: 3,
       };
-      deq([...extractCanonicalSchema(schema).tables.keys()], ['parks']);
+      deq([...extractCanonicalSchema(schema).tables.keys()], ['parks', 'staff']);
     });
   });
 

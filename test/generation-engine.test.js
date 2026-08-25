@@ -18,6 +18,7 @@ const SMALL_COUNTS = {
   accessories: 4,
   lettings: 5,
   parkOwners: 6,
+  staff: 4,
 };
 
 const rateOf = (values, matches) => values.filter(matches).length / values.length;
@@ -72,9 +73,18 @@ const beginOrder = (result) =>
 const batchSizesOf = (result, tableKey) =>
   result.batches.filter((batch) => batch.tableKey === tableKey).map((batch) => batch.rows.length);
 
+// An estate of its own, rather than the fixture's parks, so that these tests are about empty
+// parent pools and not about the cycle parks now takes part in.
+const estates = pgTable('estates', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+});
+
+const estateRules = { id: structuralDefault, name: structuralDefault };
+
 const wardens = pgTable('wardens', {
   id: serial('id').primaryKey(),
-  parkId: integer('park_id').references(() => parkSchema.parks.id),
+  estateId: integer('estate_id').references(() => estates.id),
   note: text('note').notNull(),
 });
 
@@ -85,13 +95,13 @@ const wardensWithoutParent = pgTable('wardens', {
 
 const strictWardens = pgTable('strict_wardens', {
   id: serial('id').primaryKey(),
-  parkId: integer('park_id')
+  estateId: integer('estate_id')
     .notNull()
-    .references(() => parkSchema.parks.id),
+    .references(() => estates.id),
   note: text('note').notNull(),
 });
 
-const wardenRules = { id: structuralDefault, parkId: structuralDefault, note: structuralDefault };
+const wardenRules = { id: structuralDefault, estateId: structuralDefault, note: structuralDefault };
 
 describe('generation engine', () => {
   describe('the park fixture', () => {
@@ -113,13 +123,14 @@ describe('generation engine', () => {
 
     it('writes the tables to the sink in dependency order', async () => {
       deq(beginOrder(await generateParks()), [
+        'owners',
         'parks',
         'pitches',
-        'owners',
         'holidayHomes',
         'accessories',
         'lettings',
         'parkOwners',
+        'staff',
       ]);
     });
 
@@ -146,7 +157,7 @@ describe('generation engine', () => {
     it('leaves uncounted tables out of the run entirely', async () => {
       const result = await generateParks({ counts: { parks: 1, owners: 1 } });
 
-      deq(beginOrder(result), ['parks', 'owners']);
+      deq(beginOrder(result), ['owners', 'parks']);
     });
   });
 
@@ -252,9 +263,9 @@ describe('generation engine', () => {
       await rejects(
         generate(
           {
-            schema: { parks: parkSchema.parks, strictWardens },
-            rules: { parks: structuralParkRules.parks, strictWardens: wardenRules },
-            counts: { parks: 0, strictWardens: 2 },
+            schema: { estates, strictWardens },
+            rules: { estates: estateRules, strictWardens: wardenRules },
+            counts: { estates: 0, strictWardens: 2 },
             seed: SEED,
             referenceDate: REFERENCE_DATE,
           },
@@ -263,12 +274,12 @@ describe('generation engine', () => {
         {
           name: 'EmptyParentPoolError',
           message:
-            'Column strictWardens.parkId is a not null foreign key to table parks, ' +
+            'Column strictWardens.estateId is a not null foreign key to table estates, ' +
             'which generated no rows with seed 42, so there is nothing for it to reference. ' +
-            'Raise the count for parks above zero, or make strictWardens.parkId nullable.',
+            'Raise the count for estates above zero, or make strictWardens.estateId nullable.',
           table: 'strictWardens',
-          column: 'parkId',
-          parentTable: 'parks',
+          column: 'estateId',
+          parentTable: 'estates',
           seed: SEED,
         },
       );
@@ -277,24 +288,24 @@ describe('generation engine', () => {
     it('leaves a nullable foreign key null when its parent generated no rows', async () => {
       const result = await generate(
         {
-          schema: { parks: parkSchema.parks, wardens },
-          rules: { parks: structuralParkRules.parks, wardens: wardenRules },
-          counts: { parks: 0, wardens: 3 },
+          schema: { estates, wardens },
+          rules: { estates: estateRules, wardens: wardenRules },
+          counts: { estates: 0, wardens: 3 },
           seed: SEED,
           referenceDate: REFERENCE_DATE,
         },
         createRecordingSink(),
       );
 
-      deq(valuesOf(result, 'wardens', 'parkId'), [null, null, null]);
+      deq(valuesOf(result, 'wardens', 'estateId'), [null, null, null]);
     });
 
     it('draws nothing from the random source for a foreign key with no parent to pick', async () => {
       const withParent = await generate(
         {
-          schema: { parks: parkSchema.parks, wardens },
-          rules: { parks: structuralParkRules.parks, wardens: wardenRules },
-          counts: { parks: 0, wardens: 3 },
+          schema: { estates, wardens },
+          rules: { estates: estateRules, wardens: wardenRules },
+          counts: { estates: 0, wardens: 3 },
           seed: SEED,
           referenceDate: REFERENCE_DATE,
         },

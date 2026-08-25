@@ -13,18 +13,32 @@ const positionsIn = (order) => new Map(order.tables.map((table, position) => [ta
 
 const foreignKeyEdges = (order) =>
   order.tables.flatMap((table) =>
-    table.foreignKeys.map((foreignKey) => ({ child: table.key, parent: foreignKey.referencedTableKey })),
+    table.foreignKeys.map((foreignKey) => ({
+      child: table.key,
+      columnName: foreignKey.columnName,
+      parent: foreignKey.referencedTableKey,
+    })),
   );
+
+const isDeferred = (order, edge) =>
+  order.deferredForeignKeys.some(
+    (deferred) => deferred.tableKey === edge.child && deferred.columnName === edge.columnName,
+  );
+
+// A deferred edge is the one the ordering deliberately breaks, so it is the one edge whose parent
+// may follow its child.
+const immediateEdges = (order) =>
+  foreignKeyEdges(order).filter((edge) => edge.child !== edge.parent && !isDeferred(order, edge));
 
 describe('table dependency order', () => {
   describe('acyclic schemas', () => {
     it('orders every parent before its children', () => {
       const order = orderOf(parkSchema);
       const positions = positionsIn(order);
-      const crossTableEdges = foreignKeyEdges(order).filter((edge) => edge.child !== edge.parent);
+      const edges = immediateEdges(order);
 
-      eq(crossTableEdges.length, 8);
-      for (const edge of crossTableEdges) {
+      eq(edges.length, 9);
+      for (const edge of edges) {
         ok(
           positions.get(edge.parent) < positions.get(edge.child),
           `${edge.parent} should precede ${edge.child}, but positions were ${positions.get(edge.parent)} and ${positions.get(edge.child)}`,
@@ -34,23 +48,25 @@ describe('table dependency order', () => {
 
     it('preserves input order among tables it is free to', () => {
       deq(orderedKeys(parkSchema), [
+        'owners',
         'parks',
         'pitches',
-        'owners',
         'holidayHomes',
         'accessories',
         'lettings',
         'parkOwners',
+        'staff',
       ]);
     });
 
     it('sorts tables declared child first', () => {
-      const { accessories, holidayHomes, lettings, owners, parkOwners, parks, pitches } = parkSchema;
-      const reversed = { parkOwners, lettings, accessories, holidayHomes, owners, pitches, parks };
+      const { accessories, holidayHomes, lettings, owners, parkOwners, parks, pitches, staff } = parkSchema;
+      const reversed = { staff, parkOwners, lettings, accessories, holidayHomes, owners, pitches, parks };
 
       deq(orderedKeys(reversed), [
         'owners',
         'parks',
+        'staff',
         'parkOwners',
         'pitches',
         'holidayHomes',
@@ -60,7 +76,18 @@ describe('table dependency order', () => {
     });
 
     it('defers nothing for a nullable foreign key outside a cycle', () => {
-      deq(orderOf(parkSchema).deferredForeignKeys, []);
+      const rangers = pgTable('rangers', {
+        id: integer('id').primaryKey(),
+        mentorId: integer('mentor_id').references(() => rangers.id),
+        stationId: integer('station_id').references(() => stations.id),
+      });
+      const stations = pgTable('stations', { id: integer('id').primaryKey() });
+
+      deq(orderOf({ rangers, stations }).deferredForeignKeys, []);
+    });
+
+    it('defers only the nullable edge which closes a cycle', () => {
+      deq(orderOf(parkSchema).deferredForeignKeys, [{ tableKey: 'parks', columnName: 'warden_id' }]);
     });
 
     it('orders a self referencing table without deferring or throwing', () => {

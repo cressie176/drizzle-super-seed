@@ -8,7 +8,8 @@ CREATE TABLE parks (
   latitude DOUBLE PRECISION,
   amenities JSONB,
   active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  warden_id INTEGER
 );
 
 CREATE TABLE pitches (
@@ -64,3 +65,11 @@ CREATE TABLE park_owners (
   owner_id UUID NOT NULL REFERENCES owners (id),
   CONSTRAINT park_owners_park_id_owner_id_pk PRIMARY KEY (park_id, owner_id)
 );
+
+CREATE TABLE staff (
+  id SERIAL PRIMARY KEY,
+  park_id INTEGER NOT NULL REFERENCES parks (id),
+  full_name VARCHAR(200) NOT NULL
+);
+
+ALTER TABLE parks ADD CONSTRAINT parks_warden_id_staff_id_fk FOREIGN KEY (warden_id) REFERENCES staff (id);

@@ -10,7 +10,28 @@ const parkSchema = require('./lib/park-schema');
 const SEED = 42;
 const REFERENCE_DATE = new Date('2024-06-01T00:00:00.000Z');
 
-const COUNTS = { parks: 2, pitches: 3, owners: 4, holidayHomes: 2, accessories: 2, lettings: 2, parkOwners: 2 };
+const COUNTS = {
+  parks: 2,
+  pitches: 3,
+  owners: 4,
+  holidayHomes: 2,
+  accessories: 2,
+  lettings: 2,
+  parkOwners: 2,
+  staff: 3,
+};
+
+const NUMBERED = [
+  '010_owners.sql',
+  '020_parks.sql',
+  '030_pitches.sql',
+  '040_holidayHomes.sql',
+  '050_accessories.sql',
+  '060_lettings.sql',
+  '070_parkOwners.sql',
+  '080_staff.sql',
+  '090_deferred_parks_warden_id.sql',
+];
 
 const temporaryDirectory = () => mkdtemp(join(tmpdir(), 'drizzle-super-seed-'));
 
@@ -44,31 +65,20 @@ describe('postgres sql file sink', () => {
 
   describe('the files it writes', () => {
     it('writes one numbered file per table, a finalise file, an orchestrator and a manifest', async () => {
-      deq((await readdir(directory)).sort(), [
-        '010_parks.sql',
-        '020_pitches.sql',
-        '030_owners.sql',
-        '040_holidayHomes.sql',
-        '050_accessories.sql',
-        '060_lettings.sql',
-        '070_parkOwners.sql',
-        '900_finalise.sql',
-        'load.psql',
-        'manifest.json',
-      ]);
+      deq((await readdir(directory)).sort(), [...NUMBERED, '900_finalise.sql', 'load.psql', 'manifest.json']);
     });
 
     it('numbers the files so lexical order is dependency order', async () => {
       const numbered = (await readdir(directory)).filter((file) => /^\d{3}_/.test(file)).sort();
 
       deq(
-        numbered.slice(0, -1).map((file) => file.replace(/^\d{3}_|\.sql$/g, '')),
-        ['parks', 'pitches', 'owners', 'holidayHomes', 'accessories', 'lettings', 'parkOwners'],
+        numbered.slice(0, -2).map((file) => file.replace(/^\d{3}_|\.sql$/g, '')),
+        ['owners', 'parks', 'pitches', 'holidayHomes', 'accessories', 'lettings', 'parkOwners', 'staff'],
       );
     });
 
     it('makes each table file self contained', async () => {
-      const parks = await read(directory, '010_parks.sql');
+      const parks = await read(directory, '020_parks.sql');
 
       ok(parks.startsWith('BEGIN;\nSET session_replication_role = replica;\nCOPY "public"."parks" ('));
       ok(parks.includes(') FROM stdin;\n'));
@@ -76,21 +86,21 @@ describe('postgres sql file sink', () => {
     });
 
     it('names the columns as the database names them, quoted', async () => {
-      const parks = await read(directory, '010_parks.sql');
+      const parks = await read(directory, '020_parks.sql');
 
       ok(
         parks.includes(
-          'COPY "public"."parks" ("id", "name", "region", "opened_at", "latitude", "amenities", "active", "created_at") FROM stdin;',
+          'COPY "public"."parks" ("id", "name", "region", "opened_at", "latitude", "amenities", "active", "created_at", "warden_id") FROM stdin;',
         ),
       );
     });
 
     it('writes one tab separated line per row', async () => {
-      const lines = (await read(directory, '010_parks.sql')).split('\n');
+      const lines = (await read(directory, '020_parks.sql')).split('\n');
       const rows = lines.slice(3, 3 + COUNTS.parks);
 
       eq(rows.length, 2);
-      for (const row of rows) eq(row.split('\t').length, 8);
+      for (const row of rows) eq(row.split('\t').length, 9);
     });
 
     it('writes an empty copy block for a table counted at zero', async () => {
@@ -102,7 +112,7 @@ describe('postgres sql file sink', () => {
     });
 
     const emptyParksBlock = async () => {
-      const parks = await read(directory, '010_parks.sql');
+      const parks = await read(directory, '020_parks.sql');
       const header = parks.split(') FROM stdin;\n')[0];
       return `${header}) FROM stdin;\n\\.\nCOMMIT;\n`;
     };
@@ -112,18 +122,7 @@ describe('postgres sql file sink', () => {
     it('stops on the first error and includes every numbered file once, in order', async () => {
       eq(
         await read(directory, 'load.psql'),
-        [
-          '\\set ON_ERROR_STOP on',
-          '\\ir 010_parks.sql',
-          '\\ir 020_pitches.sql',
-          '\\ir 030_owners.sql',
-          '\\ir 040_holidayHomes.sql',
-          '\\ir 050_accessories.sql',
-          '\\ir 060_lettings.sql',
-          '\\ir 070_parkOwners.sql',
-          '\\ir 900_finalise.sql',
-          '',
-        ].join('\n'),
+        ['\\set ON_ERROR_STOP on', ...[...NUMBERED, '900_finalise.sql'].map((file) => `\\ir ${file}`), ''].join('\n'),
       );
     });
 
@@ -250,7 +249,7 @@ describe('postgres sql file sink', () => {
       const manifest = JSON.parse(await read(invented, 'manifest.json'));
       await generateInto(replayed, { seed: manifest.seed, referenceDate: new Date(manifest.referenceDate) });
 
-      eq(await read(replayed, '010_parks.sql'), await read(invented, '010_parks.sql'));
+      eq(await read(replayed, '020_parks.sql'), await read(invented, '020_parks.sql'));
       await rm(invented, { recursive: true, force: true });
       await rm(replayed, { recursive: true, force: true });
     });

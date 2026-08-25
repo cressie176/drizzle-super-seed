@@ -32,6 +32,7 @@ describe('installed drizzle-orm introspection', () => {
         ['amenities', 'PgJsonb'],
         ['active', 'PgBoolean'],
         ['created_at', 'PgTimestamp'],
+        ['warden_id', 'PgInteger'],
       ]);
     });
 

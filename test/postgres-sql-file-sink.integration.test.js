@@ -27,6 +27,7 @@ const COUNTS = {
   accessories: 8,
   lettings: 12,
   parkOwners: 5,
+  staff: 9,
 };
 
 const TABLE_NAMES = {
@@ -37,6 +38,7 @@ const TABLE_NAMES = {
   accessories: 'accessories',
   lettings: 'lettings',
   parkOwners: 'park_owners',
+  staff: 'staff',
 };
 
 const LOCAL_DATABASE = 'drizzle_super_seed_load';
@@ -150,6 +152,29 @@ describe('postgres sql file sink', () => {
       eq(unexpected, '0');
     });
 
+    it('assigns every deferred foreign key a row which exists', async () => {
+      const orphans = await queryValue(
+        `SELECT COUNT(*) FROM parks p LEFT JOIN staff s ON s.id = p.warden_id
+         WHERE p.warden_id IS NOT NULL AND s.id IS NULL`,
+        { database: LOCAL_DATABASE },
+      );
+      const assigned = await queryValue('SELECT COUNT(*) FROM parks WHERE warden_id IS NOT NULL', {
+        database: LOCAL_DATABASE,
+      });
+
+      eq(orphans, '0');
+      ok(Number(assigned) > 0);
+    });
+
+    it('patches the rows with a single set based update', async () => {
+      const deferred = await readFile(join(directory, '090_deferred_parks_warden_id.sql'), 'utf8');
+
+      eq(deferred.split('UPDATE ').length - 1, 1);
+      ok(deferred.includes('CREATE TEMP TABLE deferred_parks_warden_id ("id" integer, "warden_id" integer)'));
+      ok(deferred.includes('FROM deferred_parks_warden_id d WHERE t."id" = d."id";'));
+      ok(!deferred.includes('UPDATE "public"."parks" AS t SET "warden_id" = 1 '));
+    });
+
     it('leaves every sequence ready for the next insert', async () => {
       const inserted = await queryValue(
         `WITH park AS (
@@ -241,6 +266,20 @@ describe('postgres sql file sink', () => {
       await executeConnectionString(connectionString(LOADER_ROLE, REMOTE_DATABASE), `${LOADED}/load.psql`);
 
       deq(await countsIn(REMOTE_DATABASE), COUNTS);
+    });
+
+    it('assigns the deferred foreign keys even with the constraints enforcing', async () => {
+      const orphans = await queryValue(
+        `SELECT COUNT(*) FROM parks p LEFT JOIN staff s ON s.id = p.warden_id
+         WHERE p.warden_id IS NOT NULL AND s.id IS NULL`,
+        { database: REMOTE_DATABASE },
+      );
+      const assigned = await queryValue('SELECT COUNT(*) FROM parks WHERE warden_id IS NOT NULL', {
+        database: REMOTE_DATABASE,
+      });
+
+      eq(orphans, '0');
+      ok(Number(assigned) > 0);
     });
 
     it('loads the self referencing table, every referrer after the row it refers to', async () => {

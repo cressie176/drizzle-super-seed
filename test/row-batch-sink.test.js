@@ -54,6 +54,7 @@ describe('row batch sink', () => {
         'amenities',
         'active',
         'createdAt',
+        'wardenId',
       ]);
     });
 
@@ -62,7 +63,7 @@ describe('row batch sink', () => {
 
       deq(
         [...new Set(batches.map((batch) => batch.tableKey))],
-        ['parks', 'pitches', 'owners', 'holidayHomes', 'accessories', 'lettings', 'parkOwners'],
+        ['owners', 'parks', 'pitches', 'holidayHomes', 'accessories', 'lettings', 'parkOwners'],
       );
     });
 
@@ -161,7 +162,7 @@ describe('row batch sink', () => {
         (error) => error === failure,
       );
 
-      deq(seen, ['parks', 'pitches']);
+      deq(seen, ['owners', 'parks', 'pitches']);
     });
 
     it('propagates a rejected promise unwrapped', async () => {

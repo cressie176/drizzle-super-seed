@@ -9,6 +9,7 @@ const structuralParkRules = {
     amenities: structuralDefault,
     active: structuralDefault,
     createdAt: structuralDefault,
+    wardenId: structuralDefault,
   },
   pitches: {
     id: structuralDefault,
@@ -55,6 +56,11 @@ const structuralParkRules = {
     parkId: structuralDefault,
     ownerId: structuralDefault,
   },
+  staff: {
+    id: structuralDefault,
+    parkId: structuralDefault,
+    fullName: structuralDefault,
+  },
 };
 
 const everyParkTableCounted = {
@@ -65,6 +71,7 @@ const everyParkTableCounted = {
   accessories: 1,
   lettings: 1,
   parkOwners: 1,
+  staff: 1,
 };
 
 module.exports = { everyParkTableCounted, structuralParkRules };

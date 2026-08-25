@@ -35,7 +35,15 @@ describe('in memory graph sink', () => {
     it('collects every generated row, in generation order', async () => {
       const graph = await graphOf();
 
-      deq(Object.keys(graph.rows), Object.keys(everyParkTableCounted));
+      deq(Object.keys(graph.rows), [
+        'owners',
+        'parks',
+        'pitches',
+        'holidayHomes',
+        'accessories',
+        'lettings',
+        'parkOwners',
+      ]);
       for (const [tableKey, count] of Object.entries(COUNTS)) eq(graph.rows[tableKey].length, count);
       deq(
         graph.rows.parks.map((park) => park.id),
@@ -52,7 +60,7 @@ describe('in memory graph sink', () => {
     it('leaves uncounted tables out of the graph', async () => {
       const graph = await graphOf({ counts: { parks: 1, owners: 1 } });
 
-      deq(Object.keys(graph.rows), ['parks', 'owners']);
+      deq(Object.keys(graph.rows), ['owners', 'parks']);
     });
 
     it('folds the report into the graph', async () => {

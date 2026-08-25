@@ -33,6 +33,7 @@ const parks = pgTable('parks', {
   amenities: jsonb('amenities'),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  wardenId: integer('warden_id').references(() => staff.id),
 });
 
 const pitches = pgTable('pitches', {
@@ -109,4 +110,22 @@ const parkOwners = pgTable(
   (table) => [primaryKey({ columns: [table.parkId, table.ownerId] })],
 );
 
-module.exports = { lettingStatus, parks, pitches, owners, holidayHomes, accessories, lettings, parkOwners };
+const staff = pgTable('staff', {
+  id: serial('id').primaryKey(),
+  parkId: integer('park_id')
+    .notNull()
+    .references(() => parks.id),
+  fullName: varchar('full_name', { length: 200 }).notNull(),
+});
+
+module.exports = {
+  lettingStatus,
+  parks,
+  pitches,
+  owners,
+  holidayHomes,
+  accessories,
+  lettings,
+  parkOwners,
+  staff,
+};

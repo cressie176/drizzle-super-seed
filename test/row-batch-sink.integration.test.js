@@ -1,6 +1,6 @@
 const { describe, it, before, after } = require('node:test');
 const { deepEqual: deq, equal: eq, ok, rejects } = require('node:assert');
-const { sql } = require('drizzle-orm');
+const { and, eq: eqTo, sql } = require('drizzle-orm');
 const { drizzle } = require('drizzle-orm/node-postgres');
 const { createRowBatchSink, generate } = require('../lib');
 const { connect, createParkSchema, dropParkSchema } = require('./lib/park-database');
@@ -18,6 +18,7 @@ const COUNTS = {
   accessories: 10,
   lettings: 15,
   parkOwners: 6,
+  staff: 9,
 };
 
 const insertBuilder = (db, batch) => {
@@ -26,6 +27,15 @@ const insertBuilder = (db, batch) => {
 };
 
 const insertBatch = (db) => (batch) => insertBuilder(db, batch).values(batch.rows);
+
+const primaryKeyMatch = (table, primaryKey) =>
+  and(...Object.entries(primaryKey).map(([property, value]) => eqTo(table[property], value)));
+
+const applyDeferredUpdates = (db) => async (batch) => {
+  for (const update of batch.updates) {
+    await db.update(batch.table).set(update.values).where(primaryKeyMatch(batch.table, update.primaryKey));
+  }
+};
 
 const countOf = async (client, table) => {
   const { rows } = await client.query(`SELECT COUNT(*)::int AS total FROM ${table}`);
@@ -61,7 +71,7 @@ describe('row batch sink', () => {
           referenceDate: REFERENCE_DATE,
           batchSize: 4,
         },
-        createRowBatchSink(insertBatch(db)),
+        createRowBatchSink(insertBatch(db), applyDeferredUpdates(db)),
       );
     });
 
@@ -101,6 +111,18 @@ describe('row batch sink', () => {
         WHERE child.referred_by_owner_id IS NOT NULL AND parent.id IS NULL
       `);
 
+      eq(rows[0].orphans, 0);
+    });
+
+    it('applies the deferred updates through drizzle, with the constraint enforcing', async () => {
+      const { rows } = await client.query(`
+        SELECT
+          (SELECT COUNT(*)::int FROM parks WHERE warden_id IS NOT NULL) AS assigned,
+          (SELECT COUNT(*)::int FROM parks p LEFT JOIN staff s ON s.id = p.warden_id
+             WHERE p.warden_id IS NOT NULL AND s.id IS NULL) AS orphans
+      `);
+
+      ok(rows[0].assigned > 0);
       eq(rows[0].orphans, 0);
     });
 

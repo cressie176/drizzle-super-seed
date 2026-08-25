@@ -3,6 +3,7 @@ const { deepEqual: deq, equal: eq, notEqual: notEq, ok, throws } = require('node
 const { bigint, bigserial, date, integer, numeric, pgTable, timestamp, uuid, varchar } = require('drizzle-orm/pg-core');
 const { extractCanonicalSchema, structuralDefault } = require('../lib');
 const { PlanSource, resolveGenerationPlan } = require('../lib/generation-rules');
+const { orderTablesByDependency } = require('../lib/table-dependency-order');
 const { REFERENCE_DATE, contextFor, draw } = require('./lib/generator-draws');
 const { everyParkTableCounted, structuralParkRules } = require('./lib/park-rules');
 const parkSchema = require('./lib/park-schema');
@@ -18,8 +19,12 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 const DATE_STRING = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_STRING = /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
 
-const planFor = (rules, counts, schema = parkSchema) =>
-  resolveGenerationPlan(extractCanonicalSchema(schema), rules, counts);
+// The engine orders the tables before resolving the plan, so that deferred foreign keys are
+// exempt from needing a count; the helper does the same.
+const planFor = (rules, counts, schema = parkSchema) => {
+  const canonical = extractCanonicalSchema(schema);
+  return resolveGenerationPlan(canonical, rules, counts, orderTablesByDependency(canonical).deferredForeignKeys);
+};
 
 const parkPlan = () => planFor(structuralParkRules, everyParkTableCounted);
 
@@ -116,7 +121,7 @@ describe('generation rules', () => {
       it('plans every counted table, in schema order', () => {
         deq(
           [...parkPlan().keys()],
-          ['parks', 'pitches', 'owners', 'holidayHomes', 'accessories', 'lettings', 'parkOwners'],
+          ['parks', 'pitches', 'owners', 'holidayHomes', 'accessories', 'lettings', 'parkOwners', 'staff'],
         );
       });
 
