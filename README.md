@@ -416,13 +416,17 @@ Pass a sink as the second argument to `generate(config, sink)`. The return value
 Use the in-memory graph when a test does not need a database. It returns every generated row and provides helpers for navigating relationships:
 
 ```ts
-const data = await generate({ schema, rules, counts }, createInMemoryGraphSink());
+const data = await generate({ schema, rules, counts }, createInMemoryGraphSink<typeof schema>());
 
 const pitch = data.rows.pitches[0];
-const park = data.parentOf('pitches', pitch, 'parkId');       // the exact park row, or null
+const park = data.parentOf<'parks'>('pitches', pitch, 'parkId');   // the exact park row, or null
 if (!park) throw new Error('every pitch has a park');
-const pitches = data.childrenOf('parks', park, 'pitches');    // all of that park's pitches
+const pitches = data.childrenOf('parks', park, 'pitches');         // all of that park's pitches
 ```
+
+Passing the schema type — `createInMemoryGraphSink<typeof schema>()` — types the rows: `data.rows.pitches` is a `pitches` row array, `park.name` is a `string`, and a misspelt table or column is a compile error. Rows carry every column, including a `GENERATED ALWAYS AS IDENTITY` key, so the row type is Drizzle's `$inferSelect`.
+
+`childrenOf` knows the child table from its last argument. `parentOf` cannot: which table a foreign key points at is not recorded in any Drizzle type, so name it — `parentOf<'parks'>(...)` — or accept a row of any table in the schema. Without the schema type argument the graph is string-keyed and its rows are `Record<string, unknown>`, exactly as before.
 
 ### createRowBatchSink: integration tests
 

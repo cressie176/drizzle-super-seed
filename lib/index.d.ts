@@ -154,22 +154,54 @@ export interface GenerationConfig<TSchema = Record<string, unknown>> {
   batchSize?: number;
 }
 
-export interface DataGraph {
-  report: GenerationReport;
-  rows: Record<string, Record<string, unknown>[]>;
-  parentOf(
-    childTableKey: string,
-    childRow: Record<string, unknown>,
-    foreignKeyColumn: string,
-  ): Record<string, unknown> | null;
-  childrenOf(
-    parentTableKey: string,
-    parentRow: Record<string, unknown>,
-    childTableKey: string,
-  ): Record<string, unknown>[];
+// Graph rows carry every column, including a GENERATED ALWAYS AS IDENTITY column the engine
+// numbers itself, so `$inferSelect` is the accurate row type. `Required<$inferInsert>` would be
+// missing exactly the identity column a test reaches for when linking rows by hand.
+interface SelectableTable {
+  $inferSelect: object;
 }
 
-export function createInMemoryGraphSink(): GenerationSink<DataGraph>;
+type SchemaTableKey<TSchema> = {
+  [K in keyof TSchema]: TSchema[K] extends SelectableTable ? K : never;
+}[keyof TSchema];
+
+// The schema type argument is optional: `createInMemoryGraphSink()` still returns the string-keyed
+// graph it always did. The tuple stops `never` distributing, which would make the check vacuous.
+type UntypedSchema<TSchema> = [SchemaTableKey<TSchema>] extends [never] ? true : false;
+
+export type GraphRow<TSchema, TKey> = UntypedSchema<TSchema> extends true
+  ? Record<string, unknown>
+  : TKey extends keyof TSchema
+    ? TSchema[TKey] extends SelectableTable
+      ? TSchema[TKey]['$inferSelect']
+      : never
+    : never;
+
+export type GraphTableName<TSchema> = UntypedSchema<TSchema> extends true ? string : SchemaTableKey<TSchema>;
+
+export type GraphRows<TSchema> = UntypedSchema<TSchema> extends true
+  ? Record<string, Record<string, unknown>[]>
+  : { [K in SchemaTableKey<TSchema>]: GraphRow<TSchema, K>[] };
+
+export interface DataGraph<TSchema = Record<string, unknown>> {
+  report: GenerationReport;
+  rows: GraphRows<TSchema>;
+  // The parent table is not an argument — it is whichever table the foreign key points at, which
+  // no drizzle type records — so it is named as an explicit type argument, or left as the union of
+  // every row the schema can hold.
+  parentOf<TParent extends GraphTableName<TSchema> = GraphTableName<TSchema>>(
+    childTableKey: GraphTableName<TSchema>,
+    childRow: Record<string, unknown>,
+    foreignKeyColumn: string,
+  ): GraphRow<TSchema, TParent> | null;
+  childrenOf<TChild extends GraphTableName<TSchema>>(
+    parentTableKey: GraphTableName<TSchema>,
+    parentRow: Record<string, unknown>,
+    childTableKey: TChild,
+  ): GraphRow<TSchema, TChild>[];
+}
+
+export function createInMemoryGraphSink<TSchema = Record<string, unknown>>(): GenerationSink<DataGraph<TSchema>>;
 
 export interface RowBatch {
   tableKey: string;

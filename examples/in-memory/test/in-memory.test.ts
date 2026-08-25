@@ -11,7 +11,7 @@ import * as schema from '../src/schema.ts';
 // Faker's stream continues across runs in one process, so each run re-seeds both sides.
 const generateGraph = (seed = SEED, overrides = {}) => {
   seedFaker(seed);
-  return generate({ schema, rules, counts: testCounts, seed, ...overrides }, createInMemoryGraphSink());
+  return generate({ schema, rules, counts: testCounts, seed, ...overrides }, createInMemoryGraphSink<typeof schema>());
 };
 
 test('a cancelled letting is excluded from the invoice', async () => {
@@ -26,7 +26,7 @@ test('every letting navigates to its holiday home, and every park to its pitches
   const data = await generateGraph();
 
   for (const letting of data.rows.lettings) {
-    const home = data.parentOf('lettings', letting, 'holidayHomeId');
+    const home = data.parentOf<'holidayHomes'>('lettings', letting, 'holidayHomeId');
     assert.equal(home?.id, letting.holidayHomeId);
   }
   const [park] = data.rows.parks;
@@ -37,15 +37,10 @@ test('names and emails are realistic, not word soup', async () => {
   const data = await generateGraph();
   const [owner] = data.rows.owners;
 
-  assert.match(String(owner.fullName), /^[A-Z][\S]*.* /, 'a faker name starts with a capital and has parts');
-  assert.match(String(owner.email), /@example\.com$/);
-  assert.ok(
-    String(owner.email).startsWith(
-      String(owner.fullName)
-        .toLowerCase()
-        .replace(/[^a-z]+/g, '.'),
-    ),
-  );
+  // Passing the schema type to the sink makes these rows their real types: no String() casts.
+  assert.match(owner.fullName, /^[A-Z][\S]*.* /, 'a faker name starts with a capital and has parts');
+  assert.match(owner.email, /@example\.com$/);
+  assert.ok(owner.email.startsWith(owner.fullName.toLowerCase().replace(/[^a-z]+/g, '.')));
 });
 
 test('independently generated fees cannot be confused with one another', async () => {
