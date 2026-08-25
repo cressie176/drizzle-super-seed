@@ -38,6 +38,8 @@ const references = (columnName, referencedTableKey, referencedColumnName) => ({
   referencedColumnName,
 });
 
+const constraint = (columns, nullsNotDistinct = false) => ({ columns, nullsNotDistinct });
+
 const table = (key, name, columns, { primaryKey, foreignKeys = [], uniqueConstraints = [] }) => [
   key,
   {
@@ -212,7 +214,7 @@ const expectedParkSchema = new Map([
     {
       primaryKey: ['id'],
       foreignKeys: [references('referred_by_owner_id', 'owners', 'id')],
-      uniqueConstraints: [['email']],
+      uniqueConstraints: [constraint(['email'])],
     },
   ),
   table(
@@ -373,7 +375,7 @@ const expectedParkSchema = new Map([
     {
       primaryKey: ['id'],
       foreignKeys: [references('holiday_home_id', 'holidayHomes', 'id')],
-      uniqueConstraints: [['holiday_home_id', 'start_date']],
+      uniqueConstraints: [constraint(['holiday_home_id', 'start_date'])],
     },
   ),
   table(
@@ -550,11 +552,11 @@ describe('drizzle schema adapter', () => {
     });
 
     it('reads a single column unique constraint from the column which declares it', () => {
-      deq(tableNamed('owners').uniqueConstraints, [['email']]);
+      deq(tableNamed('owners').uniqueConstraints, [constraint(['email'])]);
     });
 
     it('reads a composite unique constraint from the table which declares it', () => {
-      deq(tableNamed('lettings').uniqueConstraints, [['holiday_home_id', 'start_date']]);
+      deq(tableNamed('lettings').uniqueConstraints, [constraint(['holiday_home_id', 'start_date'])]);
     });
 
     it('distinguishes two foreign keys to the same table by their column', () => {
@@ -609,7 +611,7 @@ describe('drizzle schema adapter', () => {
       );
       const canonical = extractCanonicalSchema({ seasons }, { casing: IdentifierCasing.SnakeCase });
       deq(canonical.tables.get('seasons').primaryKey, ['start_year', 'quarter_number']);
-      deq(canonical.tables.get('seasons').uniqueConstraints, [['quarter_label']]);
+      deq(canonical.tables.get('seasons').uniqueConstraints, [constraint(['quarter_label'])]);
     });
 
     it('names foreign key columns as it names the columns themselves', () => {

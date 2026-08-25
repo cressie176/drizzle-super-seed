@@ -112,7 +112,7 @@ describe('sqlite schema adapter', () => {
       const schema = canonical();
 
       deq(schema.tables.get('parkOwners').primaryKey, ['park_id', 'owner_id']);
-      deq(schema.tables.get('owners').uniqueConstraints, [['email']]);
+      deq(schema.tables.get('owners').uniqueConstraints, [{ columns: ['email'], nullsNotDistinct: false }]);
       deq(schema.tables.get('owners').foreignKeys, [
         { columnName: 'referred_by_owner_id', referencedTableKey: 'owners', referencedColumnName: 'id' },
       ]);

@@ -176,8 +176,10 @@ describe('mariadb schema adapter', () => {
       const canonicalSchema = canonical();
 
       deq(canonicalSchema.tables.get('parkOwners').primaryKey, ['park_id', 'owner_id']);
-      deq(canonicalSchema.tables.get('owners').uniqueConstraints, [['email']]);
-      deq(canonicalSchema.tables.get('lettings').uniqueConstraints, [['holiday_home_id', 'start_date']]);
+      deq(canonicalSchema.tables.get('owners').uniqueConstraints, [{ columns: ['email'], nullsNotDistinct: false }]);
+      deq(canonicalSchema.tables.get('lettings').uniqueConstraints, [
+        { columns: ['holiday_home_id', 'start_date'], nullsNotDistinct: false },
+      ]);
       deq(canonicalSchema.tables.get('owners').foreignKeys, [
         { columnName: 'referred_by_owner_id', referencedTableKey: 'owners', referencedColumnName: 'id' },
       ]);

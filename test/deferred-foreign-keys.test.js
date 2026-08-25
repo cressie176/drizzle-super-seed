@@ -358,12 +358,47 @@ describe('deferred foreign keys', () => {
       eq(new Set(assigned).size, assigned.length);
     });
 
-    it('is exhausted when there are fewer keepers than halls', async () => {
-      await rejects(generateHalls({ halls: 40, keepers: 2 }), {
-        name: 'UniqueConstraintExhaustedError',
-        table: 'halls',
-        columns: ['keeperId'],
+    it('lets NULL through however many rows already hold one', async () => {
+      const result = await generateHalls({ halls: 40, keepers: 2 });
+      const assigned = deferredUpdatesOf(result, 'halls').map((update) => update.values.keeperId);
+
+      // Two keepers cannot serve forty halls, but PostgreSQL admits any number of NULLs in a
+      // unique constraint, so the pass assigns them rather than exhausting.
+      eq(assigned.length, 40);
+      ok(assigned.filter((value) => value === null).length > 30);
+      const distinct = assigned.filter((value) => value !== null);
+      eq(new Set(distinct).size, distinct.length);
+    });
+
+    it('is exhausted when the constraint counts its nulls', async () => {
+      const lodges = pgTable(
+        'lodges',
+        {
+          id: integer('id').primaryKey(),
+          keeperId: integer('keeper_id').references(() => lodgeKeepers.id),
+        },
+        (table) => [unique('lodges_keeper_id_key').on(table.keeperId).nullsNotDistinct()],
+      );
+
+      const lodgeKeepers = pgTable('lodge_keepers', {
+        id: integer('id').primaryKey(),
+        lodgeId: integer('lodge_id')
+          .notNull()
+          .references(() => lodges.id),
       });
+
+      const lodgeRules = {
+        lodges: { id: derive((row, context) => context.rowIndex + 1), keeperId: structuralDefault },
+        lodgeKeepers: { id: derive((row, context) => context.rowIndex + 1), lodgeId: structuralDefault },
+      };
+
+      await rejects(
+        generate(
+          { schema: { lodges, lodgeKeepers }, rules: lodgeRules, counts: { lodges: 40, lodgeKeepers: 2 }, seed: SEED },
+          createRecordingSink(),
+        ),
+        { name: 'UniqueConstraintExhaustedError', table: 'lodges', columns: ['keeperId'] },
+      );
     });
   });
 });

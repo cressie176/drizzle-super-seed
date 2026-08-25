@@ -33,6 +33,11 @@ export interface CanonicalColumn {
   withTimezone?: boolean;
 }
 
+export interface CanonicalUniqueConstraint {
+  columns: string[];
+  nullsNotDistinct: boolean;
+}
+
 export interface CanonicalForeignKey {
   columnName: string;
   referencedTableKey: string;
@@ -46,7 +51,7 @@ export interface CanonicalTable {
   columns: CanonicalColumn[];
   primaryKey: string[];
   foreignKeys: CanonicalForeignKey[];
-  uniqueConstraints: string[][];
+  uniqueConstraints: CanonicalUniqueConstraint[];
   drizzleTable: unknown;
 }
 
