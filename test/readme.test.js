@@ -1,5 +1,5 @@
 const { describe, it, before, after } = require('node:test');
-const { equal: eq, ok } = require('node:assert');
+const { deepEqual: deq, equal: eq, ok } = require('node:assert');
 const { execFile } = require('node:child_process');
 const { mkdir, readFile, rm, writeFile } = require('node:fs/promises');
 const { join } = require('node:path');
@@ -125,6 +125,36 @@ const typecheck = () =>
   run('npx', ['tsc', '-p', join(BLOCKS, 'tsconfig.json')], { cwd: EXAMPLE, maxBuffer: 8 * 1024 * 1024 })
     .then(() => ({ code: 0, output: '' }))
     .catch((error) => ({ code: error.code, output: error.stdout ?? '' }));
+
+const BACKTICKED_ERROR = /`(\w+Error)`/g;
+
+const documentedErrorNames = (markdown) => new Set([...markdown.matchAll(BACKTICKED_ERROR)].map(([, name]) => name));
+
+// generation-errors.js is module-private, but a doc test is in the same category as the module's
+// own test file: it is the only place which can see the whole list.
+const exportedErrorNames = () =>
+  Object.keys(require('../lib/generation-errors')).filter((name) => name !== 'GenerationError');
+
+describe('the readme error table', () => {
+  let documented;
+
+  before(async () => {
+    documented = documentedErrorNames(await readFile(join(REPOSITORY_ROOT, 'README.md'), 'utf8'));
+  });
+
+  it('documents every error the library can throw', () => {
+    const undocumented = exportedErrorNames().filter((name) => !documented.has(name));
+
+    deq(undocumented, [], `missing from the readme: ${undocumented.join(', ')}`);
+  });
+
+  it('documents no error the library cannot throw', () => {
+    const exported = new Set([...exportedErrorNames(), 'GenerationError']);
+    const stale = [...documented].filter((name) => !exported.has(name));
+
+    deq(stale, [], `named in the readme but not exported: ${stale.join(', ')}`);
+  });
+});
 
 describe('the readme', () => {
   let blocks;
