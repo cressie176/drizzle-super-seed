@@ -31,6 +31,7 @@ export interface CanonicalColumn {
   precision?: number;
   scale?: number;
   withTimezone?: boolean;
+  fractionalSecondDigits?: number;
 }
 
 export interface CanonicalUniqueConstraint {
