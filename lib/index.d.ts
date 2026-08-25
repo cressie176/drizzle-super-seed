@@ -185,6 +185,11 @@ export enum TriggerHandling {
   LeaveEnabled = 'LeaveEnabled',
 }
 
+export function createMariaDbSqlFileSink(options: {
+  directory: string;
+  rowsPerStatement?: number;
+}): GenerationSink<GenerationReport>;
+
 export function createPostgresSqlFileSink(options: {
   directory: string;
   triggerHandling?: TriggerHandling;

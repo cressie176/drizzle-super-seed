@@ -10,6 +10,7 @@ describe('index', () => {
       'TriggerHandling',
       'constant',
       'createInMemoryGraphSink',
+      'createMariaDbSqlFileSink',
       'createPostgresSqlFileSink',
       'createPostgresSqlStreamSink',
       'createRowBatchSink',
