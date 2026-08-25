@@ -565,6 +565,8 @@ Differences from the PostgreSQL sink, all following from MySQL rather than from 
 - The orchestrator is `load.mysql` rather than `load.psql`, kept outside the Docker image's `*.sql`
   glob for the same reason: so the numbered files load once rather than twice.
 
+String values are written as single-quoted literals with `'` doubled and backslash, newline, carriage return, tab and NUL backslash-escaped. That is correct under MySQL's default `sql_mode`, and the escaping is proved against a real server rather than only against its own expectations. A server running **`NO_BACKSLASH_ESCAPES`** reads those escapes literally and would load such values corrupted — silently, since nothing is rejected. `mysqldump` output has exactly the same exposure; if your target runs that mode, load through a client session which does not.
+
 ### Custom sinks
 
 Implement `GenerationSink` when the built-in outputs do not fit. A custom sink could write NDJSON or CSV, publish to a queue, or load another database.
