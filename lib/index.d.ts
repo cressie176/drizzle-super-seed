@@ -120,6 +120,8 @@ export function optional<TValue>(
   nullProbability?: number,
 ): ValueGenerator<TValue | null>;
 
+export function selfReference<TValue>(options?: { nullProbability?: number }): ValueGenerator<TValue | null>;
+
 export function sequence<TValue>(build: (index: number) => TValue): ValueGenerator<TValue>;
 
 export function derive<TValue>(

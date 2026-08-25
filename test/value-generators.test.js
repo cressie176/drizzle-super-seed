@@ -14,6 +14,7 @@ const {
   randomTimestampWithinYears,
   randomUuid,
   randomWords,
+  selfReference,
   sequence,
   unique,
 } = require('../lib');
@@ -313,6 +314,72 @@ describe('value generators', () => {
       const context = contextFor();
       sequence((index) => index)(context);
       eq(context.random.next(), createRandomSource(SEED).next());
+    });
+  });
+
+  describe('selfReference', () => {
+    const withPriorValues = (priorSelfReferenceValues) => ({ ...contextFor(), priorSelfReferenceValues });
+
+    it('emits null while no row has been generated', () => {
+      eq(selfReference()(withPriorValues([])), null);
+    });
+
+    it('emits null when the engine has offered no prior values at all', () => {
+      eq(selfReference()(contextFor()), null);
+    });
+
+    it('draws nothing from the random source while there is nothing to reference', () => {
+      const context = contextFor();
+      selfReference()(context);
+      eq(context.random.next(), createRandomSource(SEED).next());
+    });
+
+    it('picks uniformly from the rows already generated', () => {
+      const context = withPriorValues(['first', 'second', 'third']);
+      const values = Array.from({ length: LARGE_SAMPLE }, () => selfReference({ nullProbability: 0 })(context));
+
+      ok(
+        closeTo(
+          rateOf(values, (value) => value === 'first'),
+          1 / 3,
+        ),
+      );
+      ok(
+        closeTo(
+          rateOf(values, (value) => value === 'second'),
+          1 / 3,
+        ),
+      );
+      ok(
+        closeTo(
+          rateOf(values, (value) => value === 'third'),
+          1 / 3,
+        ),
+      );
+    });
+
+    it('emits null for a tenth of the rows by default', () => {
+      const context = withPriorValues(['first', 'second']);
+      const values = Array.from({ length: LARGE_SAMPLE }, () => selfReference()(context));
+
+      ok(
+        closeTo(
+          rateOf(values, (value) => value === null),
+          0.1,
+        ),
+      );
+    });
+
+    it('emits null at the probability given', () => {
+      const context = withPriorValues(['first', 'second']);
+      const values = Array.from({ length: LARGE_SAMPLE }, () => selfReference({ nullProbability: 0.6 })(context));
+
+      ok(
+        closeTo(
+          rateOf(values, (value) => value === null),
+          0.6,
+        ),
+      );
     });
   });
 

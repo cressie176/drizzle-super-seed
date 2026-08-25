@@ -19,6 +19,29 @@ const completePitchRules = {
   hasElectricity: true,
 } satisfies TableRules<typeof schema.pitches>;
 
+const structuralParkRules = {
+  name: structuralDefault,
+  region: structuralDefault,
+  openedAt: structuralDefault,
+  latitude: structuralDefault,
+  amenities: structuralDefault,
+  active: structuralDefault,
+  createdAt: structuralDefault,
+} satisfies TableRules<typeof schema.parks>;
+
+const structuralPitchRules = {
+  id: structuralDefault,
+  parkId: structuralDefault,
+  reference: structuralDefault,
+  areaSqm: structuralDefault,
+  hasElectricity: structuralDefault,
+} satisfies TableRules<typeof schema.pitches>;
+
+const structuralSchemaRules = {
+  parks: structuralParkRules,
+  pitches: structuralPitchRules,
+} satisfies SchemaRules<typeof schema>;
+
 const missingNotNullColumn = {
   region: 'south-west',
   openedAt: structuralDefault,
@@ -88,4 +111,7 @@ export {
   missingNotNullColumn,
   missingNullableColumn,
   missingTableRules,
+  structuralParkRules,
+  structuralPitchRules,
+  structuralSchemaRules,
 };

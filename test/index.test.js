@@ -19,6 +19,7 @@ describe('index', () => {
       'randomTimestampWithinYears',
       'randomUuid',
       'randomWords',
+      'selfReference',
       'sequence',
       'structuralDefault',
       'unique',

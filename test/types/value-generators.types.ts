@@ -12,6 +12,7 @@ import {
   randomTimestampWithinYears,
   randomUuid,
   randomWords,
+  selfReference,
   sequence,
   unique,
 } from '../../lib/index';
@@ -47,6 +48,16 @@ const optionalOnANotNullColumn = {
   name: optional(randomWords()),
 } satisfies TableRules<typeof schema.parks>;
 
+const selfReferenceOnANotNullColumn = {
+  ...generatedParkRules,
+  // @ts-expect-error selfReference() adds null to the value type, which a not null column rejects
+  name: selfReference<string>(),
+} satisfies TableRules<typeof schema.parks>;
+
+const referredBy: ValueGenerator<string | null> = selfReference<string>();
+
+const referredByRarely: ValueGenerator<string | null> = selfReference<string>({ nullProbability: 0.9 });
+
 const uuid: ValueGenerator<string> = randomUuid();
 
 const decimalString: ValueGenerator<string> = randomDecimalString(0, 100, 2);
@@ -65,6 +76,9 @@ export {
   generatorOfTheWrongType,
   openedAt,
   optionalOnANotNullColumn,
+  referredBy,
+  referredByRarely,
+  selfReferenceOnANotNullColumn,
   uniquePreservesTheValueType,
   uuid,
 };
