@@ -6,8 +6,11 @@ describe('index', () => {
     deq(Object.keys(require('../lib')).sort(), [
       'ColumnKind',
       'IdentifierCasing',
+      'TriggerHandling',
       'constant',
       'createInMemoryGraphSink',
+      'createPostgresSqlFileSink',
+      'createPostgresSqlStreamSink',
       'createRowBatchSink',
       'derive',
       'extractCanonicalSchema',

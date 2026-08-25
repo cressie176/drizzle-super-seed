@@ -155,6 +155,21 @@ export type RowBatchHandler = (batch: RowBatch) => Promise<void> | void;
 
 export function createRowBatchSink(handler: RowBatchHandler): GenerationSink<GenerationReport>;
 
+export enum TriggerHandling {
+  DisableDuringLoad = 'DisableDuringLoad',
+  LeaveEnabled = 'LeaveEnabled',
+}
+
+export function createPostgresSqlFileSink(options: {
+  directory: string;
+  triggerHandling?: TriggerHandling;
+}): GenerationSink<GenerationReport>;
+
+export function createPostgresSqlStreamSink(options: {
+  writable: NodeJS.WritableStream;
+  triggerHandling?: TriggerHandling;
+}): GenerationSink<GenerationReport>;
+
 export function generate<TSchema, TResult>(
   config: GenerationConfig<TSchema>,
   sink: GenerationSink<TResult>,
