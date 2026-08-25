@@ -1,0 +1,26 @@
+# Loads the data while the image builds, so a container starts serving in about a second instead
+# of replaying the load on first run. The base image declares VOLUME /var/lib/postgresql/data,
+# and anything a RUN step writes under a declared volume path is discarded when the layer
+# commits, so a naive build-time load silently produces an empty database: PGDATA must first be
+# moved somewhere the volume declaration does not cover.
+FROM postgres:18
+ENV PGDATA=/var/lib/postgresql/prebaked
+
+COPY drizzle/*.sql /docker-entrypoint-initdb.d/
+COPY docker/initdb/ /docker-entrypoint-initdb.d/
+
+# The official entrypoint is written to be sourced: this runs its own init sequence (initdb,
+# temporary server, /docker-entrypoint-initdb.d, shutdown) at build time instead of first run.
+RUN set -eu; \
+    mkdir -p "$PGDATA"; \
+    chown -R postgres:postgres "$PGDATA"; \
+    export POSTGRES_USER=park POSTGRES_PASSWORD=park POSTGRES_DB=park; \
+    gosu postgres bash -eu -c ' \
+      source /usr/local/bin/docker-entrypoint.sh; \
+      docker_setup_env; \
+      docker_init_database_dir; \
+      pg_setup_hba_conf postgres; \
+      docker_temp_server_start postgres; \
+      docker_setup_db; \
+      docker_process_init_files /docker-entrypoint-initdb.d/*; \
+      docker_temp_server_stop'

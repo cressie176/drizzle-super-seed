@@ -802,7 +802,7 @@ The [examples](examples) directory holds five self-contained demonstrations of o
 |---|---|
 | [examples/in-memory](examples/in-memory) | Unit tests over a navigable DataGraph, no database |
 | [examples/batch-insert](examples/batch-insert) | Ordered batches through your own drizzle db.insert, constraints enforced |
-| [examples/postgres](examples/postgres) | Bulk COPY files baked into a Postgres image by a two-line Dockerfile |
+| [examples/postgres](examples/postgres) | Bulk COPY files baked into a Postgres image, loaded at first run or at build time |
 | [examples/mariadb](examples/mariadb) | Extended INSERT files, loaded through mysql2 and baked into a MariaDB image |
 | [examples/sqlite](examples/sqlite) | A complete file-backed .db built through the row batch sink |
 
