@@ -5,6 +5,7 @@ describe('index', () => {
   it('exports the public api', () => {
     deq(Object.keys(require('../lib')).sort(), [
       'ColumnKind',
+      'Dialect',
       'IdentifierCasing',
       'TriggerHandling',
       'constant',

@@ -1,7 +1,7 @@
 const { describe, it } = require('node:test');
 const { equal: eq, throws } = require('node:assert');
 const { ColumnKind } = require('../lib');
-const { serialiseCopyRow } = require('../lib/copy-text-serialisation');
+const { serialiseCopyRow } = require('../lib/postgres/copy-text-serialisation');
 
 const TAB = '\t';
 const NEWLINE = '\n';

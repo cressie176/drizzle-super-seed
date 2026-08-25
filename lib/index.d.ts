@@ -50,7 +50,14 @@ export interface CanonicalTable {
   drizzleTable: unknown;
 }
 
+export enum Dialect {
+  Postgres = 'Postgres',
+  MariaDb = 'MariaDb',
+  Sqlite = 'Sqlite',
+}
+
 export interface CanonicalSchema {
+  dialect: Dialect;
   tables: Map<string, CanonicalTable>;
 }
 

@@ -28,6 +28,11 @@ jobs:
           PGUSER: drizzle_super_seed
           PGPASSWORD: drizzle_super_seed
           PGDATABASE: drizzle_super_seed
+          MARIADB_HOST: localhost
+          MARIADB_PORT: 3306
+          MARIADB_USER: drizzle_super_seed
+          MARIADB_PASSWORD: drizzle_super_seed
+          MARIADB_DATABASE: drizzle_super_seed
 
   coverage:
     name: Coverage
@@ -47,6 +52,11 @@ jobs:
           PGUSER: drizzle_super_seed
           PGPASSWORD: drizzle_super_seed
           PGDATABASE: drizzle_super_seed
+          MARIADB_HOST: localhost
+          MARIADB_PORT: 3306
+          MARIADB_USER: drizzle_super_seed
+          MARIADB_PASSWORD: drizzle_super_seed
+          MARIADB_DATABASE: drizzle_super_seed
       - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -71,4 +81,9 @@ jobs:
           PGUSER: drizzle_super_seed
           PGPASSWORD: drizzle_super_seed
           PGDATABASE: drizzle_super_seed
+          MARIADB_HOST: localhost
+          MARIADB_PORT: 3306
+          MARIADB_USER: drizzle_super_seed
+          MARIADB_PASSWORD: drizzle_super_seed
+          MARIADB_DATABASE: drizzle_super_seed
       - run: npm run example:image

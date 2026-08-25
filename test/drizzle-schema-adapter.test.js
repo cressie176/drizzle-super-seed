@@ -16,7 +16,7 @@ const {
   timestamp,
   varchar,
 } = require('drizzle-orm/pg-core');
-const { ColumnKind, IdentifierCasing, extractCanonicalSchema } = require('../lib');
+const { ColumnKind, Dialect, IdentifierCasing, extractCanonicalSchema } = require('../lib');
 const parkSchema = require('./lib/park-schema');
 
 const SMALLINT_MAX = 32_767;
@@ -436,7 +436,7 @@ const namesOf = (canonical, key) => canonical.tables.get(key).columns.map((each)
 describe('drizzle schema adapter', () => {
   describe('the park schema', () => {
     it('extracts every table and column exactly', () => {
-      deq(extractCanonicalSchema(parkSchema), { tables: expectedParkSchema });
+      deq(extractCanonicalSchema(parkSchema), { dialect: Dialect.Postgres, tables: expectedParkSchema });
     });
   });
 

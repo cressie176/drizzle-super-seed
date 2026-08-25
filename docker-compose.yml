@@ -12,3 +12,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: drizzle_super_seed
+      MARIADB_USER: drizzle_super_seed
+      MARIADB_PASSWORD: drizzle_super_seed
+      MARIADB_DATABASE: drizzle_super_seed
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u drizzle_super_seed -pdrizzle_super_seed"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
