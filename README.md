@@ -739,6 +739,7 @@ row is generated.
 | Error | Raised when |
 |---|---|
 | InvalidGeneratorConfigurationError | a generator's arguments cannot describe a distribution, naming the factory |
+| EmptySchemaError | the schema module contains no drizzle tables (wrong import, or a duplicated drizzle-orm) |
 | UnsupportedColumnTypeError | a column's type has no generator, naming the drizzle type |
 | UnsupportedRelationshipError | a foreign key spans more than one column |
 | IncompleteSchemaError | a foreign key points at a table missing from the schema module |
