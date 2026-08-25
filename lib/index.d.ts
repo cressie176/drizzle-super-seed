@@ -1,5 +1,3 @@
-import type { Table } from 'drizzle-orm';
-
 export enum ColumnKind {
   Integer = 'Integer',
   BigInt = 'BigInt',
@@ -102,12 +100,21 @@ export const structuralDefault: unique symbol;
 
 export type ColumnRule<TValue> = ValueGenerator<TValue> | TValue | typeof structuralDefault;
 
-export type TableRules<TTable extends Table> = {
+// Constrained structurally on `$inferInsert`, not on drizzle's `Table`. drizzle ships separate
+// declarations for import and require resolution, and its `Column` has a protected member, so a
+// `Table` from one copy is not the `Table` of the other: an ESM consumer on NodeNext would filter
+// every table out of `SchemaRules` and silently lose drift detection. `$inferInsert` is the only
+// thing these types read, and it is the same type in either copy.
+interface InsertableTable {
+  $inferInsert: object;
+}
+
+export type TableRules<TTable extends InsertableTable> = {
   [K in keyof Required<TTable['$inferInsert']>]: ColumnRule<Required<TTable['$inferInsert']>[K]>;
 };
 
 export type SchemaRules<TSchema> = {
-  [K in keyof TSchema as TSchema[K] extends Table ? K : never]: TSchema[K] extends Table
+  [K in keyof TSchema as TSchema[K] extends InsertableTable ? K : never]: TSchema[K] extends InsertableTable
     ? TableRules<TSchema[K]>
     : never;
 };

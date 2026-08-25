@@ -11,6 +11,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["lib/**/*.d.ts", "test/types/**/*.ts"],
+  "include": ["lib/**/*.d.ts", "test/types/**/*.ts", "test/types/**/*.mts"],
   "exclude": ["node_modules", "examples"]
 }

@@ -100,6 +100,8 @@ Requirements:
 
 - Node.js 22 or later
 - Drizzle ORM 0.36 or later
+- TypeScript 5.0 or later, if you want drift detection. Any `moduleResolution` works, from
+  `NodeNext` on an ESM project to `Bundler`, and it works from CommonJS too
 - PostgreSQL, MariaDB or SQLite when using a sink which connects to a database
 
 ## Quick start
