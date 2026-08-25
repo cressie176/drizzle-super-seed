@@ -130,3 +130,15 @@ export function unique<TValue>(
   generator: ValueGenerator<TValue>,
   options?: { maxAttempts?: number },
 ): ValueGenerator<TValue>;
+
+export function weightedPick<TValue extends string>(weights: Record<TValue, number>): ValueGenerator<TValue>;
+
+export function weightedPickFrom<TValue>(entries: readonly { value: TValue; weight: number }[]): ValueGenerator<TValue>;
+
+export function zipfInteger(min: number, max: number, skew?: number): ValueGenerator<number>;
+
+export function normalInteger(
+  mean: number,
+  stdDev: number,
+  clamp?: { min: number; max: number },
+): ValueGenerator<number>;

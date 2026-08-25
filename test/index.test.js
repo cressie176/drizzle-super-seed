@@ -9,6 +9,7 @@ describe('index', () => {
       'constant',
       'derive',
       'extractCanonicalSchema',
+      'normalInteger',
       'optional',
       'pickFrom',
       'randomBoolean',
@@ -21,6 +22,9 @@ describe('index', () => {
       'sequence',
       'structuralDefault',
       'unique',
+      'weightedPick',
+      'weightedPickFrom',
+      'zipfInteger',
     ]);
   });
 });

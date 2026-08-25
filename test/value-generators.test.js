@@ -1,6 +1,7 @@
 const { describe, it } = require('node:test');
 const { deepEqual: deq, equal: eq, notEqual: notEq, ok, throws } = require('node:assert');
 const { createRandomSource } = require('../lib/random-source');
+const { REFERENCE_DATE, SEED, contextFor, draw } = require('./lib/generator-draws');
 const {
   constant,
   derive,
@@ -17,24 +18,8 @@ const {
   unique,
 } = require('../lib');
 
-const SEED = 42;
-const REFERENCE_DATE = new Date('2024-06-01T00:00:00.000Z');
 const LARGE_SAMPLE = 10_000;
 const RATE_TOLERANCE = 0.02;
-
-const contextFor = ({ seed = SEED, row = {}, referenceDate = REFERENCE_DATE } = {}) => ({
-  random: createRandomSource(seed),
-  seed,
-  row,
-  rowIndex: 0,
-  lookups: {},
-  referenceDate,
-});
-
-const draw = (generator, count, options) => {
-  const context = contextFor(options);
-  return Array.from({ length: count }, (_, rowIndex) => generator({ ...context, rowIndex }));
-};
 
 const timesOf = (dates) => dates.map((date) => date.getTime());
 
