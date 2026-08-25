@@ -39,6 +39,7 @@ drizzle-super-seed separates data generation from its output. The same rules can
   - [Identity and serial columns](#identity-and-serial-columns)
   - [Self-references and cycles](#self-references-and-cycles)
   - [Limits](#limits)
+  - [Why there is no SQLite file sink](#why-there-is-no-sqlite-file-sink)
 - [Comparison with drizzle-seed](#comparison-with-drizzle-seed)
 - [Use with drizzle-explain](#use-with-drizzle-explain)
 - [Worked example](#worked-example)
@@ -586,6 +587,28 @@ A cycle in which every foreign key is non-nullable is rejected. No row in such a
 - Composite primary keys and unique constraints are supported. Composite foreign keys are not. Use a single-column surrogate primary key on the parent and retain the natural key as a unique constraint.
 - Array columns and exotic types are rejected with a clear error naming the column.
 - No incremental seeding into a database that already has data.
+
+### Why there is no SQLite file sink
+
+drizzle-super-seed generates bulk SQL files for PostgreSQL and MariaDB, and deliberately does not for SQLite.
+
+The bulk file sinks exist to avoid network round trips: `COPY` and extended `INSERT`s move millions of rows to a server in one stream, which ORM inserts cannot match. SQLite is embedded, so there are no round trips to avoid. A single transaction of inserts through `createRowBatchSink` is already the fast path, and a file sink would add surface without adding speed.
+
+To bake a SQLite artefact, generate into a file-backed database and commit the file:
+
+<!-- readme-test: skip -->
+```ts
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { createRowBatchSink, generate } from 'drizzle-super-seed';
+
+const database = new Database('fixtures/park.db');
+database.pragma('foreign_keys = ON');
+const db = drizzle({ client: database });
+
+await generate({ schema, rules, counts, seed: 42 }, createRowBatchSink((batch) => db.insert(batch.table).values(batch.rows)));
+database.close();
+```
 
 ## Comparison with drizzle-seed
 
