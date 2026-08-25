@@ -144,6 +144,17 @@ export interface DataGraph {
 
 export function createInMemoryGraphSink(): GenerationSink<DataGraph>;
 
+export interface RowBatch {
+  tableKey: string;
+  table: unknown;
+  rows: Record<string, unknown>[];
+  overrideSystemValue: boolean;
+}
+
+export type RowBatchHandler = (batch: RowBatch) => Promise<void> | void;
+
+export function createRowBatchSink(handler: RowBatchHandler): GenerationSink<GenerationReport>;
+
 export function generate<TSchema, TResult>(
   config: GenerationConfig<TSchema>,
   sink: GenerationSink<TResult>,

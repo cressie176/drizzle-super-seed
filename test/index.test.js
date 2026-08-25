@@ -8,6 +8,7 @@ describe('index', () => {
       'IdentifierCasing',
       'constant',
       'createInMemoryGraphSink',
+      'createRowBatchSink',
       'derive',
       'extractCanonicalSchema',
       'generate',
