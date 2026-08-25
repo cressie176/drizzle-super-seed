@@ -1,0 +1,26 @@
+{
+  "name": "@drizzle-super-seed/example-park",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A worked example of drizzle-super-seed: one schema, one set of rules, three sinks",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/graph.test.ts test/insert.test.ts",
+    "generate": "tsx scripts/generate-production-data.ts",
+    "image:build": "docker build -t drizzle-super-seed-park .",
+    "image:run": "docker run --rm -e POSTGRES_PASSWORD=park -p 55432:5432 drizzle-super-seed-park",
+    "test:image": "tsx --test test/image.test.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../..",
+    "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

@@ -5,14 +5,15 @@ const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const { TriggerHandling, createPostgresSqlFileSink, generate } = require('../lib');
 const {
-  copyIntoContainer,
+  connectionStringFor,
   executeConnectionString,
   executeFile,
   executeScript,
+  moveStaged,
   queryValue,
-  removeFromContainer,
-  renameInContainer,
-} = require('./lib/container-psql');
+  removeStaged,
+  stageDirectory,
+} = require('./lib/psql');
 const { structuralParkRules } = require('./lib/park-rules');
 const parkSchema = require('./lib/park-schema');
 
@@ -80,12 +81,10 @@ const countsIn = async (database) => {
   return totals;
 };
 
-const connectionString = (user, database) => `postgresql://${user}:${user}@localhost:5432/${database}`;
-
 describe('postgres sql file sink', () => {
   after(async () => {
-    await removeFromContainer(LOADED);
-    await removeFromContainer(MOVED);
+    await removeStaged(LOADED);
+    await removeStaged(MOVED);
     await executeScript(`DROP DATABASE IF EXISTS ${LOCAL_DATABASE}`);
     await executeScript(`DROP DATABASE IF EXISTS ${REMOTE_DATABASE}`);
     await executeScript(`DROP ROLE IF EXISTS ${LOADER_ROLE}`).catch(() => {});
@@ -100,8 +99,7 @@ describe('postgres sql file sink', () => {
       await generateInto(directory);
       manifest = JSON.parse(await readFile(join(directory, 'manifest.json'), 'utf8'));
       await freshDatabase(LOCAL_DATABASE);
-      await removeFromContainer(LOADED);
-      await copyIntoContainer(directory, LOADED);
+      await stageDirectory(directory, LOADED);
       for (const file of await numberedFiles(directory)) {
         await executeFile(`${LOADED}/${file}`, { database: LOCAL_DATABASE });
       }
@@ -204,9 +202,8 @@ describe('postgres sql file sink', () => {
       directory = await temporaryDirectory();
       await generateInto(directory);
       await freshDatabase(REMOTE_DATABASE);
-      await removeFromContainer(LOADED);
-      await removeFromContainer(MOVED);
-      await copyIntoContainer(directory, LOADED);
+      await removeStaged(MOVED);
+      await stageDirectory(directory, LOADED);
     });
 
     after(async () => {
@@ -214,16 +211,16 @@ describe('postgres sql file sink', () => {
     });
 
     it('loads everything over tcp in a single psql invocation', async () => {
-      await executeConnectionString(connectionString('drizzle_super_seed', REMOTE_DATABASE), `${LOADED}/load.psql`);
+      await executeConnectionString(connectionStringFor('drizzle_super_seed', REMOTE_DATABASE), `${LOADED}/load.psql`);
 
       deq(await countsIn(REMOTE_DATABASE), COUNTS);
     });
 
     it('resolves its includes after the directory is moved', async () => {
       await freshDatabase(REMOTE_DATABASE);
-      await renameInContainer(LOADED, MOVED);
+      await moveStaged(LOADED, MOVED);
 
-      await executeConnectionString(connectionString('drizzle_super_seed', REMOTE_DATABASE), `${MOVED}/load.psql`);
+      await executeConnectionString(connectionStringFor('drizzle_super_seed', REMOTE_DATABASE), `${MOVED}/load.psql`);
 
       deq(await countsIn(REMOTE_DATABASE), COUNTS);
     });
@@ -244,8 +241,7 @@ describe('postgres sql file sink', () => {
          GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO ${LOADER_ROLE};`,
         { database: REMOTE_DATABASE },
       );
-      await removeFromContainer(LOADED);
-      await copyIntoContainer(directory, LOADED);
+      await stageDirectory(directory, LOADED);
     });
 
     after(async () => {
@@ -263,7 +259,7 @@ describe('postgres sql file sink', () => {
     });
 
     it('loads as that role with every constraint enforcing', async () => {
-      await executeConnectionString(connectionString(LOADER_ROLE, REMOTE_DATABASE), `${LOADED}/load.psql`);
+      await executeConnectionString(connectionStringFor(LOADER_ROLE, REMOTE_DATABASE), `${LOADED}/load.psql`);
 
       deq(await countsIn(REMOTE_DATABASE), COUNTS);
     });

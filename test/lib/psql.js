@@ -20,8 +20,11 @@ const dockerCompose = (dockerArguments, stdin) =>
     child.stdin.end(stdin ?? '');
   });
 
-const psql = (psqlArguments, stdin) =>
-  dockerCompose(['exec', '-T', 'postgres', 'psql', '-v', 'ON_ERROR_STOP=1', ...psqlArguments], stdin);
+const inContainer = (containerArguments) => ['exec', '-T', 'postgres', ...containerArguments];
+
+const psqlArguments = (given) => ['psql', '-v', 'ON_ERROR_STOP=1', ...given];
+
+const psql = (given, stdin) => dockerCompose(inContainer(psqlArguments(given)), stdin);
 
 const executeScript = (script, { database = DATABASE, user = USER } = {}) => psql(['-U', user, '-d', database], script);
 
@@ -34,24 +37,39 @@ const queryValue = async (statement, { database = DATABASE, user = USER } = {}) 
   (await psql(['-t', '-A', '-U', user, '-d', database, '-c', statement])).trim().split('\n')[0];
 
 const spawnPsql = ({ database = DATABASE, user = USER } = {}) =>
-  spawn('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-v', 'ON_ERROR_STOP=1', '-U', user, '-d', database], {
+  spawn('docker', ['compose', ...inContainer(psqlArguments(['-U', user, '-d', database]))], {
     cwd: REPOSITORY_ROOT,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
-const copyIntoContainer = (source, destination) => dockerCompose(['cp', source, `postgres:${destination}`]);
+// psql runs inside the compose container, so generated files have to be copied in before it can
+// read them; the returned path is the one psql should be given.
+const stageDirectory = async (source, destination) => {
+  await removeStaged(destination);
+  await dockerCompose(['cp', source, `postgres:${destination}`]);
+  return destination;
+};
 
-const removeFromContainer = (path) => dockerCompose(['exec', '-T', 'postgres', 'rm', '-rf', path]);
+const moveStaged = async (from, to) => {
+  await removeStaged(to);
+  await dockerCompose(inContainer(['mv', from, to]));
+  return to;
+};
 
-const renameInContainer = (from, to) => dockerCompose(['exec', '-T', 'postgres', 'mv', from, to]);
+function removeStaged(path) {
+  return dockerCompose(inContainer(['rm', '-rf', path]));
+}
+
+const connectionStringFor = (user, database) => `postgresql://${user}:${user}@localhost:5432/${database}`;
 
 module.exports = {
-  copyIntoContainer,
+  connectionStringFor,
   executeConnectionString,
   executeFile,
   executeScript,
+  moveStaged,
   queryValue,
-  removeFromContainer,
-  renameInContainer,
+  removeStaged,
   spawnPsql,
+  stageDirectory,
 };

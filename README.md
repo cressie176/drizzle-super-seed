@@ -170,13 +170,11 @@ The library reads types, nullability, lengths, enum values, foreign keys, unique
 
 ```ts
 const lettingRules = {
-  id: structuralDefault,
   holidayHomeId: structuralDefault,           // FK: the engine assigns a real parent
   status: structuralDefault,                  // pgEnum: random pick from the declared values
   guestName: randomWords({ minLength: 8, maxLength: 24 }),
-  startDate: randomDateBetween(new Date('2024-01-01'), new Date('2026-12-31')),
-  endDate: derive((row, ctx) => addDays(row.startDate as Date, ctx.random.intBetween(7, 21))),
-  notes: optional(randomWords(), 0.3),        // null 30% of the time
+  startDate: structuralDefault,               // date(): drizzle inserts a string, not a Date
+  cleaningFee: randomDecimalString(30, 90, 2),
 } satisfies TableRules<typeof schema.lettings>;
 ```
 
@@ -193,16 +191,20 @@ import type { SchemaRules, TableRules } from 'drizzle-super-seed';
 import * as schema from './schema.ts';
 
 const parkRules = {
-  id: structuralDefault,
   name: parkName(),
   region: weightedPick({ 'south-west': 0.4, wales: 0.3, 'north-east': 0.3 }),
-  openedAt: randomDateBetween(new Date('1965-01-01'), new Date('2020-12-31')),
+  openedAt: structuralDefault,
+  latitude: structuralDefault,
+  amenities: structuralDefault,
+  active: true,
 } satisfies TableRules<typeof schema.parks>;
 
 export const rules = {
   parks: parkRules,
   pitches: pitchRules,
-  // one entry per table
+  owners: ownerRules,
+  holidayHomes: holidayHomeRules,
+  lettings: lettingRules,
 } satisfies SchemaRules<typeof schema>;
 ```
 
@@ -245,7 +247,13 @@ Use `derive` when one column depends on another in the same row, for example `en
 Use `sequence` for high-cardinality unique values where possible. Unlike `unique`, it does not rely on retries and cannot exhaust:
 
 ```ts
-email: sequence((i) => `owner-${i}@example.com`),
+const ownerRules = {
+  id: structuralDefault,
+  fullName: randomWords({ minLength: 8, maxLength: 24 }),
+  email: sequence((index) => `owner-${index}@example.com`),
+  memberSince: structuralDefault,
+  referredByOwnerId: structuralDefault,
+} satisfies TableRules<typeof schema.owners>;
 ```
 
 ### Async lookups
@@ -253,15 +261,20 @@ email: sequence((i) => `owner-${i}@example.com`),
 Some realistic data depends on an external source, such as a file containing valid postcodes. Load this data once through `lookups`, then use it synchronously from any generator:
 
 ```ts
-await generate({
-  schema,
-  rules,
-  counts,
-  lookups: { postcodes: () => loadPostcodeSample() },
-}, createPostgresSqlFileSink({ directory: 'docker/initdb' }));
+const parkRules = {
+  ...structuralParkRules,
+  region: derive((_row, context) => context.random.pick(context.lookups.postcodes as string[])),
+} satisfies TableRules<typeof schema.parks>;
 
-// in a rule:
-postcode: derive((_row, ctx) => ctx.random.pick(ctx.lookups.postcodes as string[])),
+await generate(
+  {
+    schema,
+    rules: { ...rules, parks: parkRules },
+    counts,
+    lookups: { postcodes: () => loadPostcodeSample() },
+  },
+  createPostgresSqlFileSink({ directory: 'docker/initdb' }),
+);
 ```
 
 Lookup functions are resolved before generation starts. The row generation loop remains synchronous, which avoids performing I/O for every row.
@@ -270,6 +283,7 @@ Lookup functions are resolved before generation starts. The row generation loop 
 
 drizzle-super-seed deliberately does not depend on [@faker-js/faker](https://fakerjs.dev/), but works with it. Choose one seed, give it to both libraries, and call faker inside `derive` rules:
 
+<!-- readme-test: skip -->
 ```ts
 import { faker } from '@faker-js/faker';
 import { derive, generate, createInMemoryGraphSink, structuralDefault } from 'drizzle-super-seed';
@@ -380,7 +394,8 @@ Use the in-memory graph when a test does not need a database. It returns every g
 const data = await generate({ schema, rules, counts }, createInMemoryGraphSink());
 
 const pitch = data.rows.pitches[0];
-const park = data.parentOf('pitches', pitch, 'parkId');       // the exact park row
+const park = data.parentOf('pitches', pitch, 'parkId');       // the exact park row, or null
+if (!park) throw new Error('every pitch has a park');
 const pitches = data.childrenOf('parks', park, 'pitches');    // all of that park's pitches
 ```
 

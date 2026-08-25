@@ -20,8 +20,11 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "example:typecheck": "npm run typecheck --workspace @drizzle-super-seed/example-park",
+    "example:test": "npm test --workspace @drizzle-super-seed/example-park",
+    "example:image": "npm run test:image --workspace @drizzle-super-seed/example-park"
   },
   "peerDependencies": {
     "drizzle-orm": ">=0.36"
@@ -50,5 +53,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/cressie176/drizzle-super-seed"
-  }
+  },
+  "workspaces": [
+    "examples/*"
+  ]
 }

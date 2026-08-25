@@ -4,7 +4,7 @@ const { once } = require('node:events');
 const { readFile } = require('node:fs/promises');
 const { join } = require('node:path');
 const { createPostgresSqlStreamSink, generate } = require('../lib');
-const { executeScript, queryValue, spawnPsql } = require('./lib/container-psql');
+const { executeScript, queryValue, spawnPsql } = require('./lib/psql');
 const { structuralParkRules } = require('./lib/park-rules');
 const parkSchema = require('./lib/park-schema');
 
