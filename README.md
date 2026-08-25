@@ -187,8 +187,16 @@ const lettingRules = {
 
 Rules mirror the shape of the schema: one rules object per generated table and one rule per column. Drizzle does not provide a way to attach this metadata directly to tables or columns, so some duplication is unavoidable. The supplied types keep the two aligned:
 
-- `TableRules` requires a correctly typed rule for every column, including optional and nullable columns.
+- `TableRules` requires a correctly typed rule for every **insertable** column, including optional and nullable ones.
 - `SchemaRules` requires a rules object for every table exported by the schema module.
+
+#### Columns which take no rule
+
+A `GENERATED ALWAYS AS IDENTITY` column is not insertable, and a rule for it is a compile error rather than merely unnecessary. PostgreSQL rejects an insert supplying such a column without `OVERRIDING SYSTEM VALUE`, so Drizzle leaves it out of `$inferInsert` — and `TableRules` is built on `$inferInsert`.
+
+Nothing is lost in the generated data. The engine assigns these values from its own per-table sequence so that foreign keys have something to refer to, and the sinks supply `OVERRIDING SYSTEM VALUE` or the `COPY` equivalent. What is lost is rules-level *control*, deliberately: `GENERATED ALWAYS` is the schema declaring that the database owns the column. Declare [`generatedByDefaultAsIdentity()`](https://orm.drizzle.team/docs/column-types/pg#identity-columns) instead if you want to write rules for it.
+
+An [override](#overrides) can still pin one of these columns, since an override names the exact rows a test needs rather than describing how the column is generated.
 
 ```ts
 import { structuralDefault, weightedPick } from 'drizzle-super-seed';
@@ -616,6 +624,8 @@ await generate({ schema, rules, counts, casing: IdentifierCasing.SnakeCase }, cr
 ### Identity and serial columns
 
 Identity and serial columns are supported, including `GENERATED ALWAYS AS IDENTITY`. Explicit IDs are generated so that foreign keys can refer to them. PostgreSQL `COPY` accepts these values, and the finalisation script updates the corresponding sequences afterwards.
+
+A `GENERATED ALWAYS AS IDENTITY` column takes no rule — see [Columns which take no rule](#columns-which-take-no-rule).
 
 When using the row batch sink, tables which require `.overridingSystemValue()` are identified in the batch metadata.
 
