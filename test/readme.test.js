@@ -16,6 +16,7 @@ const FENCE = /(?:<!-- readme-test: (?<directive>[a-z-]+) -->\n)?```(?<language>
 const IMPORT = /^import[\s\S]*?;$/gm;
 
 const PREAMBLE = `import type { PgTable } from 'drizzle-orm/pg-core';
+import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type {
   CanonicalTable,
   CountRule,
@@ -56,8 +57,8 @@ import {
   weightedPickFrom,
   zipfInteger,
 } from 'drizzle-super-seed';
-import { rules } from '../src/rules.ts';
-import * as schema from '../src/schema.ts';
+import { rules } from '../src/postgres/rules.ts';
+import * as schema from '../src/postgres/schema.ts';
 
 // Bindings the README's excerpts assume from their surrounding prose.
 declare const counts: Record<string, CountRule>;
@@ -77,6 +78,9 @@ declare function insertBatch(batch: RowBatch): Promise<void>;
 declare function loadPostcodeSample(): Promise<string[]>;
 declare function parkName(): ValueGenerator<string>;
 declare function addDays(date: Date, days: number): Date;
+declare function drizzle(config: { client: unknown }): {
+  insert(table: SQLiteTable): { values(rows: Record<string, unknown>[]): { run(): void } };
+};
 declare function buildInvoice(lettings: Record<string, unknown>[]): { total: string; lines: unknown[] };
 declare const assert: { equal(actual: unknown, expected: unknown): void };
 declare function test(name: string, body: () => Promise<void> | void): void;

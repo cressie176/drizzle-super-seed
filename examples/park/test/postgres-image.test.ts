@@ -33,7 +33,7 @@ const waitUntilReady = async () => {
 
 before(async () => {
   await run('docker', ['rm', '-f', CONTAINER]).catch(() => {});
-  await run('npx', ['tsx', 'scripts/generate-production-data.ts'], {
+  await run('npx', ['tsx', 'scripts/postgres-files.ts'], {
     cwd: example,
     env: { ...process.env, SEED: '42' },
   });

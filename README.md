@@ -286,7 +286,6 @@ Lookup functions are resolved before generation starts. The row generation loop 
 
 drizzle-super-seed deliberately does not depend on [@faker-js/faker](https://fakerjs.dev/), but works with it. Choose one seed, give it to both libraries, and call faker inside `derive` rules:
 
-<!-- readme-test: skip -->
 ```ts
 import { faker } from '@faker-js/faker';
 import { derive, generate, createInMemoryGraphSink, structuralDefault } from 'drizzle-super-seed';
@@ -299,6 +298,8 @@ faker.seed(seed);
 const ownerRules = {
   id: structuralDefault,
   fullName: derive(() => faker.person.fullName()),
+  email: sequence((index) => `owner-${index}@example.com`),
+  memberSince: structuralDefault,
   referredByOwnerId: structuralDefault,
 } satisfies TableRules<typeof schema.owners>;
 
@@ -647,17 +648,22 @@ The bulk file sinks exist to avoid network round trips: `COPY` and extended `INS
 
 To bake a SQLite artefact, generate into a file-backed database and commit the file:
 
-<!-- readme-test: skip -->
 ```ts
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { createRowBatchSink, generate } from 'drizzle-super-seed';
 
 const database = new Database('fixtures/park.db');
 database.pragma('foreign_keys = ON');
 const db = drizzle({ client: database });
 
-await generate({ schema, rules, counts, seed: 42 }, createRowBatchSink((batch) => db.insert(batch.table).values(batch.rows)));
+await generate(
+  { schema, rules, counts, seed: 42 },
+  createRowBatchSink((batch) => {
+    db.insert(batch.table as SQLiteTable).values(batch.rows).run();
+  }),
+);
 database.close();
 ```
 
@@ -711,7 +717,21 @@ Query plans are only meaningful against production-shaped data; a missing index 
 
 ## Worked example
 
-The [`park`](examples/park) example models a holiday-park management system (parks, pitches, holiday homes, owners, lettings) and exercises all three sinks from one set of rules: unit tests over the in-memory graph, integration tests through a row batch handler, and a Dockerfile that bakes a production-shaped database from generated `COPY` files.
+The [`park`](examples/park) example models a holiday-park management system (parks, pitches, holiday homes, owners, lettings) and demonstrates the library end to end, five ways:
+
+| Example | Entry point | What it shows |
+|---|---|---|
+| In-memory | `test/in-memory.test.ts` | Unit tests over a navigable `DataGraph`, no database |
+| Batch insert | `test/batch-insert.test.ts` | Ordered batches through your own drizzle `db.insert`, constraints enforced |
+| PostgreSQL files | `scripts/postgres-files.ts` + `Dockerfile` | Bulk `COPY` files baked into a Postgres image |
+| MariaDB files | `scripts/mariadb-files.ts` | Extended `INSERT` files loaded through `mysql2` |
+| SQLite | `scripts/sqlite-database.ts` | A complete file-backed `.db` built through the row batch sink |
+
+The five share one domain and one set of faker-driven generators (`src/generators.ts`), one `counts.ts`, and the same rules shape — but each dialect declares the domain in its own schema module (`src/postgres`, `src/mariadb`, `src/sqlite`). That is a constraint, not a choice: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`.
+
+There is no hand-written DDL anywhere in the example. Every database — the Docker image, the integration tests, the SQLite file — is created from the drizzle schema by `drizzle-kit generate`, so the schema module is the single source of truth for structure and data alike.
+
+Realistic values come from the faker pattern above: `faker.seed(seed)` once, the same `seed` passed to `generate`, faker called inside `derive` rules. One caveat the example's tests demonstrate: faker's stream continues across runs within one process, so anything calling `generate` more than once must re-seed faker between runs to replay a dataset.
 
 ## License
 

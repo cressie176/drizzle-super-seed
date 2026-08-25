@@ -1,19 +1,19 @@
+// The batch insert example: the generator hands ordered row batches to your own drizzle
+// db.insert handler, with foreign key constraints enforced throughout. The tables are created
+// from the drizzle schema by drizzle-kit — there is no hand-written DDL anywhere.
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
 import { after, before, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { type RowBatch, createRowBatchSink, generate } from 'drizzle-super-seed';
 import pg from 'pg';
-import { rules } from '../src/rules.ts';
-import * as schema from '../src/schema.ts';
+import { testCounts } from '../src/counts.ts';
+import { SEED, seedFaker } from '../src/generators.ts';
+import { generateMigrations, migrationStatements } from '../src/migrations.ts';
+import { rules } from '../src/postgres/rules.ts';
+import * as schema from '../src/postgres/schema.ts';
 
-const here = dirname(fileURLToPath(import.meta.url));
-
-const COUNTS = { parks: 2, pitches: 6, owners: 10, holidayHomes: 8, lettings: 20 };
+const COUNTS = { ...testCounts, parks: 2, pitches: 6, owners: 10, holidayHomes: 8, lettings: 20 };
 
 const client = new pg.Client({
   host: process.env.PGHOST ?? 'localhost',
@@ -31,27 +31,27 @@ const insertBatch = async (batch: RowBatch) => {
   await insert.values(batch.rows);
 };
 
+const dropEverything = async () => {
+  await client.query('DROP TABLE IF EXISTS lettings, holiday_homes, owners, pitches, parks CASCADE');
+  await client.query('DROP TYPE IF EXISTS letting_status');
+};
+
 before(async () => {
   await client.connect();
-  await db.execute(
-    sql.raw(
-      'DROP TABLE IF EXISTS lettings, holiday_homes, owners, pitches, parks CASCADE; DROP TYPE IF EXISTS letting_status',
-    ),
-  );
-  await db.execute(sql.raw(await readFile(join(here, '..', 'src', 'schema.sql'), 'utf8')));
+  await dropEverything();
+  for (const statement of await migrationStatements(await generateMigrations('drizzle-postgres.config.ts'))) {
+    await client.query(statement);
+  }
 });
 
 after(async () => {
-  await db.execute(
-    sql.raw(
-      'DROP TABLE IF EXISTS lettings, holiday_homes, owners, pitches, parks CASCADE; DROP TYPE IF EXISTS letting_status',
-    ),
-  );
+  await dropEverything();
   await client.end();
 });
 
 test('generated rows insert with every foreign key constraint enforced', async () => {
-  const report = await generate({ schema, rules, counts: COUNTS, seed: 42 }, createRowBatchSink(insertBatch));
+  seedFaker(SEED);
+  const report = await generate({ schema, rules, counts: COUNTS, seed: SEED }, createRowBatchSink(insertBatch));
 
   assert.deepEqual(report.rowCounts, COUNTS);
 
@@ -59,9 +59,11 @@ test('generated rows insert with every foreign key constraint enforced', async (
     SELECT
       (SELECT COUNT(*)::int FROM lettings) AS lettings,
       (SELECT COUNT(*)::int FROM lettings l LEFT JOIN holiday_homes h ON h.id = l.holiday_home_id
-         WHERE h.id IS NULL) AS orphans
+         WHERE h.id IS NULL) AS orphans,
+      (SELECT full_name FROM owners LIMIT 1) AS a_name
   `);
 
   assert.equal(rows[0].lettings, COUNTS.lettings);
   assert.equal(rows[0].orphans, 0);
+  assert.match(rows[0].a_name, / /, 'faker names reach the database');
 });

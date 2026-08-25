@@ -1,4 +1,4 @@
-import type { PgTable } from 'drizzle-orm/pg-core';
+import type { Table } from 'drizzle-orm';
 
 export enum ColumnKind {
   Integer = 'Integer',
@@ -96,12 +96,12 @@ export const structuralDefault: unique symbol;
 
 export type ColumnRule<TValue> = ValueGenerator<TValue> | TValue | typeof structuralDefault;
 
-export type TableRules<TTable extends PgTable> = {
+export type TableRules<TTable extends Table> = {
   [K in keyof Required<TTable['$inferInsert']>]: ColumnRule<Required<TTable['$inferInsert']>[K]>;
 };
 
 export type SchemaRules<TSchema> = {
-  [K in keyof TSchema as TSchema[K] extends PgTable ? K : never]: TSchema[K] extends PgTable
+  [K in keyof TSchema as TSchema[K] extends Table ? K : never]: TSchema[K] extends Table
     ? TableRules<TSchema[K]>
     : never;
 };
