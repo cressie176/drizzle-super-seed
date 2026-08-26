@@ -646,7 +646,7 @@ The files are an interchange artefact first, formatted so a reader needs no out-
 - Booleans are 1 and 0, which spreadsheets, PostgreSQL and MariaDB all accept; `true` would not survive MariaDB's `tinyint(1)`.
 - Timestamps are RFC 3339 in UTC (`2024-06-01T12:30:45.123Z`), so the instant is unambiguous in the text itself rather than depending on the reader's session configuration. PostgreSQL loads that directly. MariaDB's `LOAD DATA` cannot parse a zone suffix, which is MariaDB's limitation, not the file's: strip it first (`sed 's/T\([0-9:.]*\)Z/ \1/'`) or convert in a `SET` clause.
 
-A cyclic schema needs deferred updates, which a CSV file cannot express, so it is rejected with DeferredUpdatesUnsupportedError before anything is written. The escaping is proved by loading awkward values through a real `COPY ... FORMAT csv` and comparing them back as hex.
+A cyclic schema works, and gets a better artefact than the SQL sinks can offer: a CSV file cannot express the deferred UPDATE pass, so instead of writing data plus patches, the sink holds the cycle-owning tables' rows in memory, patches them when the pass delivers, and writes their files last with the final values only. Consumers see the finished dataset; the pass-one placeholders never reach disk. Every other table streams as usual, so the memory cost is bounded to the cyclic tables alone. The escaping is proved by loading awkward values through a real `COPY ... FORMAT csv` and comparing them back as hex.
 
 ### Custom sinks
 

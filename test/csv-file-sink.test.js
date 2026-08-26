@@ -5,7 +5,7 @@ const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const { int, mysqlTable, varchar: mysqlVarchar } = require('drizzle-orm/mysql-core');
 const { boolean, integer, pgTable, timestamp, varchar } = require('drizzle-orm/pg-core');
-const { createCsvFileSink, derive, generate, structuralDefault } = require('../lib');
+const { createCsvFileSink, createInMemoryGraphSink, derive, generate, structuralDefault } = require('../lib');
 
 const SEED = 5;
 
@@ -114,7 +114,7 @@ describe('the csv file sink', () => {
     await rejects(generateCsv(), { name: 'OutputDirectoryNotEmptyError' });
   });
 
-  it('cannot apply deferred updates, and says so for a cyclic schema', async () => {
+  it('resolves a cyclic schema, writing final values with no patch step visible', async () => {
     const wardens = pgTable('wardens', {
       id: integer('id').primaryKey(),
       hallId: integer('hall_id')
@@ -126,20 +126,60 @@ describe('the csv file sink', () => {
       wardenId: integer('warden_id').references(() => wardens.id),
     });
 
-    await rejects(
-      generate(
-        {
-          schema: { wardens, halls },
-          rules: {
-            wardens: { id: rowNumber, hallId: structuralDefault },
-            halls: { id: rowNumber, wardenId: structuralDefault },
-          },
-          counts: { wardens: 2, halls: 2 },
-          seed: SEED,
-        },
-        createCsvFileSink({ directory }),
-      ),
-      { name: 'DeferredUpdatesUnsupportedError' },
+    const config = {
+      schema: { wardens, halls },
+      rules: {
+        wardens: { id: rowNumber, hallId: structuralDefault },
+        halls: { id: rowNumber, wardenId: structuralDefault },
+      },
+      counts: { wardens: 6, halls: 6 },
+      seed: SEED,
+    };
+
+    await generate(config, createCsvFileSink({ directory }));
+    const lines = (await readFile(join(directory, '0010_halls.csv'), 'utf8')).trim().split('\n').slice(1);
+    const written = lines.map((line) => line.split(',')).map(([id, wardenId]) => [Number(id), wardenId]);
+
+    // The same seed through the graph sink gives the rows after its deferred patch; the CSV
+    // must hold exactly those final values, not the pass-one NULL placeholders.
+    const graph = await generate(config, createInMemoryGraphSink());
+    for (const [id, wardenId] of written) {
+      const row = graph.rows.halls.find((hall) => hall.id === id);
+      eq(wardenId, row.wardenId === null ? '' : String(row.wardenId), `hall ${id} disagrees with the graph`);
+    }
+    ok(
+      written.some(([, wardenId]) => wardenId !== ''),
+      'the deferred pass assigned nobody, weakening the fixture',
     );
+  });
+
+  it('still writes every table of a cyclic run, streamed or buffered', async () => {
+    const wardens = pgTable('wardens', {
+      id: integer('id').primaryKey(),
+      hallId: integer('hall_id')
+        .notNull()
+        .references(() => halls.id),
+    });
+    const halls = pgTable('halls', {
+      id: integer('id').primaryKey(),
+      wardenId: integer('warden_id').references(() => wardens.id),
+    });
+
+    await generate(
+      {
+        schema: { wardens, halls, parks },
+        rules: {
+          wardens: { id: rowNumber, hallId: structuralDefault },
+          halls: { id: rowNumber, wardenId: structuralDefault },
+          parks: rules.parks,
+        },
+        counts: { wardens: 2, halls: 2, parks: 2 },
+        seed: SEED,
+      },
+      createCsvFileSink({ directory }),
+    );
+
+    const names = (await readdir(directory)).sort();
+    deq(names, ['0010_parks.csv', '0020_halls.csv', '0030_wardens.csv', 'manifest.json']);
   });
 });
