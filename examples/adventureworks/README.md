@@ -1,35 +1,61 @@
 # AdventureWorks example
 
-drizzle-super-seed against AdventureWorks (the
+AdventureWorks (the
 [lorint/AdventureWorks-for-Postgres](https://github.com/lorint/AdventureWorks-for-Postgres)
-port): 68 tables across five schemas, 90 foreign keys, 90 CHECK constraints, and the
-introspection workflow from the root README at its production scale. Everything lands in a
-Postgres image, so running it locally is one docker command.
+port) introspected across its five schemas, repaired, seeded with ~42,000 rows, and baked into
+a Postgres image:
 
 ```sh
-npm run image:build  # fetch the DDL, generate ~42,000 rows, bake a postgres:18-alpine image
-npm run image:run    # AdventureWorks on localhost:55434, user postgres, password aw
+npm run image:build   # fetch the DDL, generate, bake a postgres:18-alpine image
+npm run image:run     # AdventureWorks on localhost:55434, user postgres, password aw
+npm run test:image    # build the image and audit the running container
 ```
 
-`npm run test:image` does all of that and audits the running container. The audits are the
-point of the example:
+This is the example to crib from when your database is the big, old, constraint-heavy kind:
+68 tables, five schemas, 90 foreign keys, 90 CHECK constraints. Find your quirk below.
 
-- The 90 CHECK constraints were live during the load - `COPY` never bypasses them - so a clean
-  start already proves every gender, status, date-ordering and positive-quantity rule the
-  schema declares. A sample is asserted visibly anyway.
-- Every one of the 90 foreign keys is re-verified by a catalogue-driven orphan scan built
-  inside the database, not by a hand-maintained list.
-- The subtype chains hold exactly: person ids are a prefix of businessentity ids, employees of
-  persons, salespeople of employees, with vendors and stores carved from disjoint ranges of
-  the same shared key space - the row-number-with-offsets pattern in
-  [src/rules.ts](src/rules.ts).
+**Your tables live in multiple schemas.** Pull with a `schemaFilter` listing them; tables
+render through `pgSchema('sales').table(...)` and the library carries the schema name through
+every sink, the UNLOGGED file included.
 
-Two departures worth reading about in the source:
+**Your schema uses SQL Server-style domains, `money`, `xml` or `bytea`.** 136 columns pulled
+as non-compiling `unknown(...)` here. All mechanical: the six domains and `money` became their
+underlying `varchar`, `boolean` and `numeric` types (114 columns, by script), and the 22
+nullable `xml`/`bytea` columns were deleted, because omitted columns are never inserted. The
+header of [src/schema.ts](src/schema.ts) records every repair.
 
-- The schema module's header records every repair the pull needed: 114 domain and money
-  columns and 22 deleted xml/bytea columns. The composite foreign key stays declared: the
-  library records it, orders the load and the UNLOGGED file by it, and demands explicit rules
-  for its member columns - which src/rules.ts supplies, keeping every (offer, product) pair
-  valid. All 68 tables load UNLOGGED.
-- The DDL is fetched at generate time, pinned to an upstream commit, rather than shipped: the
-  upstream repository declares no licence, so `sql/` stays out of this one.
+**You have a composite foreign key.** `salesorderdetail`'s `(specialofferid, productid)` must
+match a row of `specialofferproduct` together. The library records the relationship, orders
+the load and the UNLOGGED file by it, and refuses `structuralDefault` on the member columns
+with `CompositeForeignKeyRuleRequiredError`, because tuple members cannot be picked
+independently. The workaround is in [src/rules.ts](src/rules.ts): both sides derive from one
+agreed pair set, so every generated pair exists. That contract is why all 68 tables here load
+`UNLOGGED` on the default settings.
+
+**Your schema is covered in CHECK constraints.** All 90 are live during a `COPY` load; nothing
+disables them, so the rules must satisfy every one. The patterns in
+[src/rules.ts](src/rules.ts), by constraint shape: letter enums (`gender`, `maritalstatus`,
+`productline`) use `pickFrom`; bounded numbers (`vacationhours`, `rating`, statuses) use
+`randomInteger` and `randomDecimalString` with the CHECK's own bounds; cross-column date rules
+(`duedate >= orderdate`, `enddate >= startdate`) use `derive` reading the row's earlier
+column; and coupled conditions (`billofmaterials`' level, assembly and quantity moving
+together) pin the whole group with `constant`.
+
+**Your schema has shared-primary-key subtype chains.** `businessentity -> person -> employee
+-> salesperson` all share one key space, with vendors and stores carved from the same range.
+Random parent picks fight primary key uniqueness on 1:1 chains, so the pattern is row numbers
+with offsets: persons are ids 1 to 1000, vendors 1001 to 1300, stores 1301 to 1500, and every
+subtype rule derives its id from its row index. See the constants at the top of
+[src/rules.ts](src/rules.ts).
+
+**Your DDL renames a column after creating it.** `install.sql` creates `doc` and later renames
+it to `documentnode`. Write rules against the pulled module, not the DDL text: the module
+reflects the database as it is, and an override keyed to the old name silently misses.
+
+**You loaded with constraint checks disabled and want to trust the result.** Crib the audit in
+[test/image.test.ts](test/image.test.ts): a catalogue-driven orphan scan, built from
+`pg_constraint` inside the database, re-verifies every foreign key without a hand-maintained
+list. It caught three real rule bugs while this example was being built; it will catch yours.
+
+The DDL is fetched at generate time, pinned to an upstream commit, because the upstream
+repository declares no licence; `sql/` stays gitignored for the same reason.
