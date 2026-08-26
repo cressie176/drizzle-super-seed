@@ -884,7 +884,7 @@ The [examples](examples) directory holds seven self-contained packages: six demo
 | [examples/mariadb](examples/mariadb) | Extended INSERT files, loaded through mysql2 and baked into a MariaDB image |
 | [examples/sqlite](examples/sqlite) | A complete file-backed .db built through the row batch sink |
 | [examples/csv](examples/csv) | Reviewable RFC 4180 files for spreadsheets and ETL, no database |
-| [examples/pagila](examples/pagila) | The introspection workflow end to end against Pagila, repairs and all |
+| [examples/pagila](examples/pagila) | Pagila introspected, repaired and baked into a Postgres image, one docker run away |
 
 They share the domain and the faker-driven generators, but each dialect declares its own schema module: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`. There is no hand-written DDL anywhere: every database an example touches is created from its drizzle schema by `drizzle-kit generate`.
 

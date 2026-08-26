@@ -13,10 +13,15 @@ derive from the row's own generated name, and film titles are titles - the faker
 the root README, one seed shared by both libraries.
 
 ```sh
-npm run generate   # ~25,000 rows as psql COPY files in out/
-npm test           # loads the real Pagila DDL into the compose PostgreSQL, loads out/ after it,
-                   # and audits the result (npm run db:up at the repository root first)
+npm run generate     # ~25,000 rows as psql COPY files in out/
+npm run image:build  # bake the real Pagila DDL and the data into a postgres:18-alpine image
+npm run image:run    # a populated Pagila on localhost:55433, user postgres, password pagila
 ```
+
+`npm run test:image` does all of that and audits the running container. Nothing else is needed:
+no compose database, just Docker. The Dockerfile renames the DDL to `0000_pagila_schema.sql` on
+copy so it sorts before the `10000_`-numbered data files, and the image runs as the default
+`postgres` superuser because the Pagila dump's `OWNER TO postgres` statements need the role.
 
 What the test proves, each the reason Pagila earned its place:
 
