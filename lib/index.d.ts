@@ -11,19 +11,21 @@ export enum ColumnKind {
   Time = 'Time',
   Json = 'Json',
   Enum = 'Enum',
+  Custom = 'Custom',
 }
 
 export interface CanonicalColumn {
   name: string;
   propertyName: string;
   kind: ColumnKind;
-  jsType: 'number' | 'string' | 'bigint' | 'boolean' | 'date' | 'json';
+  jsType: 'number' | 'string' | 'bigint' | 'boolean' | 'date' | 'json' | 'custom';
   notNull: boolean;
   hasDatabaseDefault: boolean;
   isPrimaryKey: boolean;
   sequenceOwned: boolean;
   identityAlways: boolean;
   enumValues?: readonly string[];
+  customType?: string;
   minValue?: number | bigint;
   maxValue?: number | bigint;
   maxLength?: number;
