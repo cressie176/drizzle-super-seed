@@ -1,12 +1,10 @@
 # drizzle-super-seed
 
-<!-- Uncomment when published
 [![NPM Version](https://img.shields.io/npm/v/drizzle-super-seed)](https://www.npmjs.com/package/drizzle-super-seed)
 [![CI](https://github.com/cressie176/drizzle-super-seed/actions/workflows/qa.yml/badge.svg)](https://github.com/cressie176/drizzle-super-seed/actions/workflows/qa.yml)
 [![Coverage](https://codecov.io/gh/cressie176/drizzle-super-seed/branch/main/graph/badge.svg)](https://codecov.io/gh/cressie176/drizzle-super-seed)
 [![Node.js](https://img.shields.io/node/v/drizzle-super-seed)](https://nodejs.org)
 [![License](https://img.shields.io/npm/l/drizzle-super-seed)](LICENSE)
--->
 
 Reproducible random test data for [Drizzle ORM](https://orm.drizzle.team/) schemas.
 
