@@ -732,7 +732,7 @@ schema never loads half-assigned.
 ### Limits
 
 - Databases per the [matrix](#databases); no SQLite file sink, by design.
-- Composite primary keys and unique constraints are supported. Composite foreign keys are not. Use a single-column surrogate primary key on the parent and retain the natural key as a unique constraint.
+- Composite primary keys, unique constraints and plain unique indexes are supported and enforced during generation. Partial unique indexes (a WHERE clause) and expression indexes are not table-wide constraints and are ignored. Composite foreign keys are not supported: use a single-column surrogate primary key on the parent and retain the natural key as a unique constraint.
 - A table needs no primary key. Two features do: counting a table [per parent](#counts-and-shape), which iterates the parent's key, and a [deferred foreign key](#self-references-and-cycles), whose second pass patches rows by key. Each raises `MissingPrimaryKeyError` before any row is generated, naming what needed the key.
 - Array columns and exotic types are rejected with a clear error naming the column.
 - Binary columns (`binary`, `varbinary`, `blob`) are rejected the same way, in every dialect. Generating readable words into a column that means bytes would be worse than refusing.
