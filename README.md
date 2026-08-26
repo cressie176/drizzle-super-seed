@@ -632,12 +632,12 @@ Use the CSV sink when the consumer is not a SQL client at all: `COPY ... WITH (F
 await generate({ schema, rules, counts }, createCsvFileSink({ directory: './out' }));
 ```
 
-The format is chosen so the same files load into either database:
+The files are an interchange artefact first, formatted so a reader needs no out-of-band knowledge:
 
 - The first line is a header of database column names; pass `header: false` to omit it (use `HEADER true` in COPY, or `IGNORE 1 LINES` in LOAD DATA, when it is present).
 - NULL is a bare empty field and the empty string is a quoted one, which is exactly the distinction `FORMAT csv` makes; set `nullToken` (for example to `\N`, LOAD DATA's default) when the loader expects a marker, and a genuine value equal to the token is quoted to stay a value.
-- Booleans are 1 and 0, valid input to a PostgreSQL `boolean` and a MariaDB `tinyint(1)` alike; `true` would not survive the second.
-- Timestamps are `YYYY-MM-DD HH:MM:SS.mmm`, space separated with no zone suffix, because MariaDB rejects an offset. The instants are UTC: load with the session time zone set to UTC.
+- Booleans are 1 and 0, which spreadsheets, PostgreSQL and MariaDB all accept; `true` would not survive MariaDB's `tinyint(1)`.
+- Timestamps are RFC 3339 in UTC (`2024-06-01T12:30:45.123Z`), so the instant is unambiguous in the text itself rather than depending on the reader's session configuration. PostgreSQL loads that directly. MariaDB's `LOAD DATA` cannot parse a zone suffix, which is MariaDB's limitation, not the file's: strip it first (`sed 's/T\([0-9:.]*\)Z/ \1/'`) or convert in a `SET` clause.
 
 A cyclic schema needs deferred updates, which a CSV file cannot express, so it is rejected with DeferredUpdatesUnsupportedError before anything is written. The escaping is proved by loading awkward values through a real `COPY ... FORMAT csv` and comparing them back as hex.
 

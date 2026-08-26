@@ -60,7 +60,7 @@ describe('the csv file sink', () => {
 
     eq(lines[0], 'id,name,active,opened_at');
     eq(lines[1], '1,"Park, ""the"" 0",1,');
-    eq(lines[2], '2,"Park, ""the"" 1",0,2024-06-01 12:30:45.123');
+    eq(lines[2], '2,"Park, ""the"" 1",0,2024-06-01T12:30:45.123Z');
   });
 
   it('omits the header when asked', async () => {

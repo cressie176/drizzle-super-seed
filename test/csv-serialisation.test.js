@@ -91,10 +91,10 @@ const RULES = [
     expected: '2024-06-01\n',
   },
   {
-    name: 'a timestamp is space separated with no zone suffix, loadable by both dialects',
+    name: 'a timestamp is RFC 3339 in UTC, unambiguous without the reader knowing a zone',
     kind: ColumnKind.Timestamp,
     value: new Date('2024-06-01T12:30:45.123Z'),
-    expected: '2024-06-01 12:30:45.123\n',
+    expected: '2024-06-01T12:30:45.123Z\n',
   },
   { name: 'a time passes through', kind: ColumnKind.Time, value: '12:30:45', expected: '12:30:45\n' },
   {
