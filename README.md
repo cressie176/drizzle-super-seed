@@ -872,7 +872,7 @@ Query plans are only meaningful against production-shaped data; a missing index 
 
 ## Worked example
 
-The [examples](examples) directory holds nine self-contained packages: seven demonstrations of one holiday-park domain, and two real-world schemas (parks, pitches, holiday homes, owners, lettings), each a private workspace package you can read, or copy, on its own:
+The [examples](examples) directory holds nine self-contained packages, each one you can read, or copy, on its own: seven demonstrating a sink apiece on one holiday-park domain (parks, pitches, holiday homes, owners, lettings), and two seeding real schemas introspected from a live database.
 
 | Example | Shows |
 |---|---|
@@ -886,7 +886,9 @@ The [examples](examples) directory holds nine self-contained packages: seven dem
 | [examples/pagila](examples/pagila) | Pagila introspected, repaired and baked into a Postgres image, one docker run away |
 | [examples/adventureworks](examples/adventureworks) | AdventureWorks at full scale: 68 tables, five schemas, 90 checks, in an image |
 
-They share the domain and the faker-driven generators, but each dialect declares its own schema module: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`. There is no hand-written DDL anywhere: every database an example touches is created from its drizzle schema by `drizzle-kit generate`.
+The park examples share the domain and the faker-driven generators, but each dialect declares its own schema module: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`. Their databases carry no hand-written DDL: every structure comes from the drizzle schema by `drizzle-kit generate`.
+
+The Pagila and AdventureWorks packages start from a database instead, and their READMEs are indexed by symptom rather than by feature, so you can find the quirk your own schema has and read the workaround for it.
 
 Realistic values come from the faker pattern above: `faker.seed(seed)` once, the same `seed` passed to `generate`, faker called inside `derive` rules. One caveat the examples' tests demonstrate: faker's stream continues across runs within one process, so anything calling `generate` more than once must re-seed faker between runs to replay a dataset.
 
