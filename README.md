@@ -35,6 +35,7 @@ drizzle-super-seed separates data generation from its output. The same rules can
   - [MariaDB files](#createmariadbsqlfilesink-bulk-load)
   - [CSV files](#createcsvfilesink-any-loader)
   - [Custom sinks](#custom-sinks)
+- [Seeding an existing database](#seeding-an-existing-database)
 - [Schema support](#schema-support)
   - [Databases](#databases)
   - [Database names](#database-names)
@@ -674,6 +675,45 @@ const report = await generate({ schema, rules, counts }, ndjsonSink);
 ```
 
 `writeRows` and `end` are required. `beginTable`, `endTable` and `writeDeferredUpdates` are optional. A sink without `writeDeferredUpdates` rejects schemas containing foreign key cycles during validation, before generation starts.
+
+## Seeding an existing database
+
+You do not need a hand-written drizzle schema to use drizzle-super-seed: any database you can reach can be introspected into one. Load your DDL into a disposable server, run [drizzle-kit pull](https://orm.drizzle.team/docs/drizzle-kit-pull), and point `generate` at the result:
+
+```sh
+docker run -d -e POSTGRES_PASSWORD=pw -p 5432:5432 postgres:18
+psql -h 127.0.0.1 -U postgres -f your-schema.sql
+npx drizzle-kit pull   # writes drizzle/schema.ts from the live database
+```
+
+This workflow was validated against Pagila, the classic PostgreSQL sample schema, and the traps below were all hit within the first hour. They are drizzle-kit's habits rather than this library's, but you will meet them on the way here:
+
+- **The pulled module may not compile.** Exotic types render as `unknown("column")` with a TODO comment, and `unknown` is not an import that exists. Repair by hand: a domain becomes its underlying type, a type you want generated becomes a [customType](#realistic-names-with-faker) with a rule supplying its text form, and a nullable exotic column can simply be deleted from the module, because omitted columns are never inserted:
+
+```ts
+import { customType, integer, pgTable, text } from 'drizzle-orm/pg-core';
+
+const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
+
+const articles = pgTable('articles', {
+  id: integer('id').primaryKey(),
+  title: text('title').notNull(),
+  fulltext: tsvector('fulltext').notNull(),   // was: unknown("fulltext")
+  // bytea thumbnail deleted: nullable, so the generated inserts just omit it
+});
+
+const articleRules = {
+  id: structuralDefault,
+  title: randomWords({ minLength: 8, maxLength: 30 }),
+  fulltext: derive((article, context) => `'seed':${context.rowIndex + 1}`),
+} satisfies TableRules<typeof articles>;
+```
+
+- **Cyclic foreign keys are silently dropped** - TypeScript declaration order cannot express them, and pull emits nothing where the cycle's second edge belongs. Generated values for that column are then unconstrained integers unless you rule them; pointing them at row numbers of the referenced table works, and a load with constraint checks disabled ends consistent, exactly as the original database's own dumps load. (Had pull kept the edge, a cycle that is `NOT NULL` in both directions is refused by design: a placeholder cannot enter a `NOT NULL` column.)
+- **Partitioned parents are invisible** - the partitions appear as ordinary sibling tables and the parent does not appear at all. Seed one partition directly with a rule that respects its bounds (the rows show through the parent), and mark the rest [unseeded](#schema-completeness).
+- **A trimmed module meets the UNLOGGED default.** Tables you removed from the module still exist in the database, and one of them referencing a generated table fails `0001_set_unlogged.sql` with the documented 42P16 error. Trimmed-module loads generally want `tableLogging: TableLogging.LeaveLogged`.
+
+Two former traps are handled since the validation found them: a pulled serial (`integer` with a `nextval` default) is recognised as sequence-owned and its sequence is advanced by the finalise file, and unique indexes - how introspected schemas usually declare uniqueness - are enforced during generation.
 
 ## Schema support
 

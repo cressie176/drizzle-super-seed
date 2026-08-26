@@ -16,6 +16,7 @@ const FENCE = /(?:<!-- readme-test: (?<directive>[a-z-]+) -->\n)?```(?<language>
 const IMPORT = /^import[\s\S]*?;$/gm;
 
 const PREAMBLE = `import type { PgTable } from 'drizzle-orm/pg-core';
+import { customType, integer, pgTable, text } from 'drizzle-orm/pg-core';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type {
   CanonicalTable,
