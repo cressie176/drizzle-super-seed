@@ -7,9 +7,10 @@ import { sql } from 'drizzle-orm';
 //   rendered as unknown(...): now their underlying varchar, boolean and numeric types - 114
 //   columns repaired mechanically.
 // - 22 nullable xml and bytea columns deleted: omitted columns are never inserted.
-// - The one composite foreign key (salesorderdetail -> specialofferproduct) removed from the
-//   module, per UnsupportedRelationshipError's own remedy; the rules keep its pairs valid, and
-//   the database edge the module cannot see is why generation opts out of UNLOGGED.
+// - The one composite foreign key (salesorderdetail -> specialofferproduct) is declared below
+//   and recorded by the library: it orders the load and the UNLOGGED file, and its member
+//   columns carry explicit rules keeping the pair valid, as
+//   CompositeForeignKeyRuleRequiredError would demand of structuralDefault.
 import {
   boolean,
   char,
@@ -1481,6 +1482,11 @@ export const salesorderdetailInSales = sales.table(
       foreignColumns: [salesorderheaderInSales.salesorderid],
       name: 'FK_SalesOrderDetail_SalesOrderHeader_SalesOrderID',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.specialofferid, table.productid],
+      foreignColumns: [specialofferproductInSales.specialofferid, specialofferproductInSales.productid],
+      name: 'FK_SalesOrderDetail_SpecialOfferProduct_SpecialOfferIDProductID',
+    }),
     primaryKey({
       columns: [table.salesorderdetailid, table.salesorderid],
       name: 'PK_SalesOrderDetail_SalesOrderID_SalesOrderDetailID',

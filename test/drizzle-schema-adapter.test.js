@@ -40,7 +40,12 @@ const references = (columnName, referencedTableKey, referencedColumnName) => ({
 
 const constraint = (columns, nullsNotDistinct = false) => ({ columns, nullsNotDistinct });
 
-const table = (key, name, columns, { primaryKey, foreignKeys = [], uniqueConstraints = [] }) => [
+const table = (
+  key,
+  name,
+  columns,
+  { primaryKey, foreignKeys = [], compositeForeignKeys = [], uniqueConstraints = [] },
+) => [
   key,
   {
     key,
@@ -48,6 +53,7 @@ const table = (key, name, columns, { primaryKey, foreignKeys = [], uniqueConstra
     columns,
     primaryKey,
     foreignKeys,
+    compositeForeignKeys,
     uniqueConstraints,
     drizzleTable: parkSchema[key],
   },
@@ -671,15 +677,16 @@ describe('drizzle schema adapter', () => {
       ],
     );
 
-    it('rejects a composite foreign key, naming it as the schema declares it', () => {
-      throws(() => extractCanonicalSchema({ seasons, seasonBookings }), {
-        name: 'UnsupportedRelationshipError',
-        message:
-          'Table seasonBookings has a composite foreign key on columns seasonYear, seasonQuarter. ' +
-          'Replace it with single column foreign keys, or leave the table out of the schema passed to generate.',
-        table: 'seasonBookings',
-        columns: ['seasonYear', 'seasonQuarter'],
-      });
+    it('records a composite foreign key rather than refusing the schema', () => {
+      const canonical = extractCanonicalSchema({ seasons, seasonBookings });
+
+      deq(canonical.tables.get('seasonBookings').compositeForeignKeys, [
+        {
+          columns: ['season_year', 'season_quarter'],
+          referencedTableKey: 'seasons',
+          referencedColumns: ['year', 'quarter'],
+        },
+      ]);
     });
   });
 

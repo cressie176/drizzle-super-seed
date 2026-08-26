@@ -4,7 +4,7 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TableLogging, createPostgresSqlFileSink, generate } from 'drizzle-super-seed';
+import { createPostgresSqlFileSink, generate } from 'drizzle-super-seed';
 import { SEED, counts, rules, seedFaker } from '../src/rules.ts';
 import * as schema from '../src/schema.ts';
 
@@ -45,9 +45,9 @@ await mkdir(directory, { recursive: true });
 seedFaker(SEED);
 const report = await generate(
   { schema, rules, counts, seed: SEED },
-  // LeaveLogged: the module cannot declare the composite foreign key the database enforces on
-  // salesorderdetail, so the UNLOGGED ordering cannot see that edge and would fail with 42P16.
-  createPostgresSqlFileSink({ directory, tableLogging: TableLogging.LeaveLogged }),
+  // The module declares every edge the database enforces, composite one included, so the
+  // default UNLOGGED ordering is correct and the whole schema loads without write-ahead logging.
+  createPostgresSqlFileSink({ directory }),
 );
 
 console.log(`seed ${report.seed}`);

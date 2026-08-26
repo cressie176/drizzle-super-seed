@@ -189,6 +189,15 @@ test('a sample of the ninety live check constraints, visibly respected', async (
   assert.equal((await psql('SELECT COUNT(*) FROM production.workorder WHERE orderqty <= 0')).stdout.trim(), '0');
 });
 
+test('the whole schema loaded unlogged, the composite edge ordered correctly', async () => {
+  const { stdout } = await psql(`
+    SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind = 'r' AND c.relpersistence <> 'u'
+      AND n.nspname IN ('person', 'humanresources', 'production', 'purchasing', 'sales')
+  `);
+  assert.equal(stdout.trim(), '0');
+});
+
 test('the serial sequences are ready for the next insert', async () => {
   const { stdout } = await psql('INSERT INTO person.businessentity DEFAULT VALUES RETURNING businessentityid');
   assert.equal(stdout.trim().split('\n')[0], '1501');

@@ -4,6 +4,21 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Composite foreign keys are recorded in the canonical model rather than refused: they order
+  the load and the UNLOGGED file, relations() navigation over them works, and a dependency
+  cycle whose only candidates are composite edges is refused, since a tuple cannot be
+  half-patched by the deferred pass. structuralDefault on a member column raises
+  CompositeForeignKeyRuleRequiredError naming the tuple and the remedy: write rules that keep
+  it valid together, as the AdventureWorks example demonstrates.
+
+### Removed
+
+- UnsupportedRelationshipError, which existed only to refuse composite foreign keys.
+
 ## [0.1.0] - 2026-08-26
 
 The first release.

@@ -27,8 +27,9 @@ point of the example:
 Two departures worth reading about in the source:
 
 - The schema module's header records every repair the pull needed: 114 domain and money
-  columns, 22 deleted xml/bytea columns, and the one composite foreign key the module cannot
-  declare - which is also why generation opts out of the UNLOGGED default (the database still
-  enforces the edge, so the ordering computed from the module cannot see it).
+  columns and 22 deleted xml/bytea columns. The composite foreign key stays declared: the
+  library records it, orders the load and the UNLOGGED file by it, and demands explicit rules
+  for its member columns - which src/rules.ts supplies, keeping every (offer, product) pair
+  valid. All 68 tables load UNLOGGED.
 - The DDL is fetched at generate time, pinned to an upstream commit, rather than shipped: the
   upstream repository declares no licence, so `sql/` stays out of this one.

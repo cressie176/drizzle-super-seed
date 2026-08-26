@@ -772,7 +772,7 @@ schema never loads half-assigned.
 ### Limits
 
 - Databases per the [matrix](#databases); no SQLite file sink, by design.
-- Composite primary keys, unique constraints and plain unique indexes are supported and enforced during generation. Partial unique indexes (a WHERE clause) and expression indexes are not table-wide constraints and are ignored. Composite foreign keys are not supported: use a single-column surrogate primary key on the parent and retain the natural key as a unique constraint.
+- Composite primary keys, unique constraints and plain unique indexes are supported and enforced during generation. Partial unique indexes (a WHERE clause) and expression indexes are not table-wide constraints and are ignored. Composite foreign keys are recorded: they order the load and the UNLOGGED file correctly, and relations() navigation over them works, but structuralDefault refuses their member columns with an error naming the tuple, because members cannot be picked independently. Write rules that keep the tuple valid, as the AdventureWorks example does; composite edges also cannot break a dependency cycle, since a tuple cannot be half-patched by the deferred pass.
 - A table needs no primary key. Two features do: counting a table [per parent](#counts-and-shape), which iterates the parent's key, and a [deferred foreign key](#self-references-and-cycles), whose second pass patches rows by key. Each raises `MissingPrimaryKeyError` before any row is generated, naming what needed the key.
 - Array columns and exotic types are rejected with a clear error naming the column.
 - Binary columns (`binary`, `varbinary`, `blob`) are rejected the same way, in every dialect. Generating readable words into a column that means bytes would be worse than refusing.
@@ -818,7 +818,7 @@ row is generated.
 | EmptySchemaError | the schema module contains no drizzle tables (wrong import, or a duplicated drizzle-orm) |
 | CustomColumnRuleRequiredError | structuralDefault on a customType column, which declares nothing to derive from |
 | UnsupportedColumnTypeError | a column's type has no generator, naming the drizzle type |
-| UnsupportedRelationshipError | a foreign key spans more than one column |
+| CompositeForeignKeyRuleRequiredError | structuralDefault on a composite foreign key member, whose tuple needs one rule per column keeping it valid |
 | IncompleteSchemaError | a foreign key points at a table missing from the schema module |
 | MissingPrimaryKeyError | a per-parent count or a deferred foreign key needs a primary key the table has not got |
 | MixedDialectError | one schema module mixes PostgreSQL, MariaDB or SQLite tables |

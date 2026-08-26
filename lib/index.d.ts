@@ -41,6 +41,12 @@ export interface CanonicalUniqueConstraint {
   nullsNotDistinct: boolean;
 }
 
+export interface CanonicalCompositeForeignKey {
+  columns: string[];
+  referencedTableKey: string;
+  referencedColumns: string[];
+}
+
 export interface CanonicalForeignKey {
   columnName: string;
   referencedTableKey: string;
@@ -54,6 +60,7 @@ export interface CanonicalTable {
   columns: CanonicalColumn[];
   primaryKey: string[];
   foreignKeys: CanonicalForeignKey[];
+  compositeForeignKeys: CanonicalCompositeForeignKey[];
   uniqueConstraints: CanonicalUniqueConstraint[];
   drizzleTable: unknown;
 }
