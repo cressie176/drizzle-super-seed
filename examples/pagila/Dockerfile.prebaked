@@ -1,0 +1,24 @@
+# Loads Pagila's DDL and the generated rows while the image builds, so a container serves in
+# about a second. Same volume trap as the park example: the base image declares
+# VOLUME /var/lib/postgresql/data, and RUN-step writes beneath a declared volume are discarded,
+# so PGDATA moves out from under it first. The build runs as the default postgres superuser,
+# which the dump's OWNER TO postgres statements require anyway.
+FROM postgres:18-alpine
+ENV PGDATA=/var/lib/postgresql/prebaked
+
+COPY sql/pagila-schema.sql /docker-entrypoint-initdb.d/0000_pagila_schema.sql
+COPY out/*.sql /docker-entrypoint-initdb.d/
+
+RUN set -eu; \
+    mkdir -p "$PGDATA"; \
+    chown -R postgres:postgres "$PGDATA"; \
+    export POSTGRES_PASSWORD=pagila POSTGRES_DB=pagila; \
+    gosu postgres bash -eu -c ' \
+      source /usr/local/bin/docker-entrypoint.sh; \
+      docker_setup_env; \
+      docker_init_database_dir; \
+      pg_setup_hba_conf postgres; \
+      docker_temp_server_start postgres; \
+      docker_setup_db; \
+      docker_process_init_files /docker-entrypoint-initdb.d/*; \
+      docker_temp_server_stop'

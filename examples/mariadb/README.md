@@ -9,8 +9,8 @@ Two ways to consume it, each with a test:
 
 ```sh
 npm run generate
-npm test          # loads out/ through mysql2 against the compose MariaDB (npm run db:up at the root)
-npm run test:image  # bakes out/ into a MariaDB image and asserts the container starts loaded
+npm test            # loads out/ through mysql2 against the compose MariaDB (npm run db:up at the root)
+npm run test:image  # builds and audits both Dockerfiles: first-run-loaded and prebaked
 ```
 
 The image is the same two lines as the PostgreSQL example's:
@@ -40,6 +40,6 @@ written to be sourced, so the init sequence is the image's own rather than a rei
 
 ```sh
 npm run image:build:prebaked
-docker run --rm -p 53306:3306 drizzle-super-seed-park-mariadb-prebaked
+npm run image:run:prebaked   # no environment needed: the credentials were baked at build time
 ```
 

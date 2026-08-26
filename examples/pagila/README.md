@@ -18,7 +18,9 @@ npm run image:build  # bake the real Pagila DDL and the data into a postgres:18-
 npm run image:run    # a populated Pagila on localhost:55433, user postgres, password pagila
 ```
 
-`npm run test:image` does all of that and audits the running container. Nothing else is needed:
+`npm run test:image` builds and audits both Dockerfiles - the first-run-loaded image above and
+a prebaked one (`npm run image:build:prebaked`, `npm run image:run:prebaked`) that loads at
+build time and serves in about a second, no environment needed. Nothing else is required:
 no compose database, just Docker. The Dockerfile renames the DDL to `0000_pagila_schema.sql` on
 copy so it sorts before the `10000_`-numbered data files, and the image runs as the default
 `postgres` superuser because the Pagila dump's `OWNER TO postgres` statements need the role.

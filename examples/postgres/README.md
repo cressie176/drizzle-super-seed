@@ -7,11 +7,12 @@ recording the seed.
 
 ```sh
 npm run generate     # DDL + data files
-npm run image:build  # bake them into a postgres:18 image
+npm run image:build  # bake them into a postgres:18-alpine image
 npm run image:run    # a database with ~27,000 rows, ready on start
 ```
 
-`npm run test:image` does all three and audits the running container.
+`npm run test:image` builds and audits both Dockerfiles: the first-run-loaded image above and
+the prebaked one below.
 
 Both Dockerfiles build on `postgres:18-alpine`, which is about a third smaller than the Debian
 image and pulls correspondingly faster. The alpine variant carries the same entrypoint, `bash`
@@ -35,5 +36,5 @@ run time.
 
 ```sh
 npm run image:build:prebaked
-docker run --rm -e POSTGRES_PASSWORD=park -p 55432:5432 drizzle-super-seed-park-prebaked
+npm run image:run:prebaked   # no environment needed: the credentials were baked at build time
 ```
