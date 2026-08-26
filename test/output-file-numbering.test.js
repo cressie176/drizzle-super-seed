@@ -40,7 +40,8 @@ describe('numbered output files', () => {
     await generateInto(directory, schema);
     const numbered = (await readdir(directory)).filter((file) => /^\d{4}_/.test(file)).sort();
 
-    eq(numbered.length, LIMIT + 1);
+    eq(numbered.length, LIMIT + 2);
+    ok(numbered.includes('0001_set_unlogged.sql'));
     ok(numbered.includes('8990_table898.sql'));
     ok(numbered.includes('9000_finalise.sql'));
     await rm(directory, { recursive: true, force: true });
@@ -93,7 +94,7 @@ describe('numbered output files', () => {
     await generateInto(directory, schema);
     const numbered = (await readdir(directory)).filter((file) => /^\d{4}_/.test(file) && file !== '9000_finalise.sql');
 
-    deq(numbered.length, LIMIT);
+    deq(numbered.length, LIMIT + 1);
     await rm(directory, { recursive: true, force: true });
   });
 });

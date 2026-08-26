@@ -7,6 +7,7 @@ describe('index', () => {
       'ColumnKind',
       'Dialect',
       'IdentifierCasing',
+      'TableLogging',
       'TriggerHandling',
       'constant',
       'createCsvFileSink',

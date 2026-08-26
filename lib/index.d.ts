@@ -316,6 +316,11 @@ export enum TriggerHandling {
   LeaveEnabled = 'LeaveEnabled',
 }
 
+export enum TableLogging {
+  SetUnlogged = 'SetUnlogged',
+  LeaveLogged = 'LeaveLogged',
+}
+
 export function createCsvFileSink(options: {
   directory: string;
   header?: boolean;
@@ -330,11 +335,13 @@ export function createMariaDbSqlFileSink(options: {
 export function createPostgresSqlFileSink(options: {
   directory: string;
   triggerHandling?: TriggerHandling;
+  tableLogging?: TableLogging;
 }): GenerationSink<GenerationReport>;
 
 export function createPostgresSqlStreamSink(options: {
   writable: NodeJS.WritableStream;
   triggerHandling?: TriggerHandling;
+  tableLogging?: TableLogging;
 }): GenerationSink<GenerationReport>;
 
 export function generate<TSchema, TResult>(

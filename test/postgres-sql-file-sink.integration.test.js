@@ -3,7 +3,7 @@ const { deepEqual: deq, equal: eq, ok } = require('node:assert');
 const { mkdtemp, readFile, readdir, rm } = require('node:fs/promises');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
-const { TriggerHandling, createPostgresSqlFileSink, generate } = require('../lib');
+const { TableLogging, TriggerHandling, createPostgresSqlFileSink, generate } = require('../lib');
 const {
   connectionStringFor,
   executeConnectionString,
@@ -62,7 +62,11 @@ const generateInto = (directory, overrides = {}) =>
       referenceDate: REFERENCE_DATE,
       ...overrides,
     },
-    createPostgresSqlFileSink({ directory, triggerHandling: overrides.triggerHandling }),
+    createPostgresSqlFileSink({
+      directory,
+      triggerHandling: overrides.triggerHandling,
+      tableLogging: overrides.tableLogging,
+    }),
   );
 
 const numberedFiles = async (directory) => (await readdir(directory)).filter((file) => /^\d{4}_/.test(file)).sort();
@@ -173,6 +177,18 @@ describe('postgres sql file sink', () => {
       ok(!deferred.includes('UPDATE "public"."parks" AS t SET "warden_id" = 1 '));
     });
 
+    it('makes the loaded tables unlogged, cycle members excepted', async () => {
+      const persistence = (table) =>
+        queryValue(`SELECT relpersistence FROM pg_class WHERE relname = '${table}'`, { database: LOCAL_DATABASE });
+
+      eq(await persistence('lettings'), 'u');
+      eq(await persistence('owners'), 'u');
+      // parks and staff reference each other, and PostgreSQL cannot flip a cycle one table at
+      // a time, so the file deliberately leaves them logged.
+      eq(await persistence('parks'), 'p');
+      eq(await persistence('staff'), 'p');
+    });
+
     it('leaves every sequence ready for the next insert', async () => {
       const inserted = await queryValue(
         `WITH park AS (
@@ -231,7 +247,12 @@ describe('postgres sql file sink', () => {
 
     before(async () => {
       directory = await temporaryDirectory();
-      await generateInto(directory, { triggerHandling: TriggerHandling.LeaveEnabled });
+      // The remote scenario is the managed-database shape: no superuser for the trigger
+      // setting, and no table ownership for SET UNLOGGED, so both defaults are opted out.
+      await generateInto(directory, {
+        triggerHandling: TriggerHandling.LeaveEnabled,
+        tableLogging: TableLogging.LeaveLogged,
+      });
       await freshDatabase(REMOTE_DATABASE);
       await executeScript(`DROP ROLE IF EXISTS ${LOADER_ROLE}`).catch(() => {});
       await executeScript(`CREATE ROLE ${LOADER_ROLE} LOGIN PASSWORD '${LOADER_ROLE}'`);

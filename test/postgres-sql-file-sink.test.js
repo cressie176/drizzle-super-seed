@@ -65,16 +65,23 @@ describe('postgres sql file sink', () => {
 
   describe('the files it writes', () => {
     it('writes one numbered file per table, a finalise file, an orchestrator and a manifest', async () => {
-      deq((await readdir(directory)).sort(), [...NUMBERED, '9000_finalise.sql', 'load.psql', 'manifest.json']);
+      deq((await readdir(directory)).sort(), [
+        '0001_set_unlogged.sql',
+        ...NUMBERED,
+        '9000_finalise.sql',
+        'load.psql',
+        'manifest.json',
+      ]);
     });
 
     it('numbers the files so lexical order is dependency order', async () => {
       const numbered = (await readdir(directory)).filter((file) => /^\d{4}_/.test(file)).sort();
 
       deq(
-        numbered.slice(0, -2).map((file) => file.replace(/^\d{4}_|\.sql$/g, '')),
+        numbered.slice(1, -2).map((file) => file.replace(/^\d{4}_|\.sql$/g, '')),
         ['owners', 'parks', 'pitches', 'holidayHomes', 'accessories', 'lettings', 'parkOwners', 'staff'],
       );
+      deq(numbered[0], '0001_set_unlogged.sql');
     });
 
     it('makes each table file self contained', async () => {
@@ -122,7 +129,11 @@ describe('postgres sql file sink', () => {
     it('stops on the first error and includes every numbered file once, in order', async () => {
       eq(
         await read(directory, 'load.psql'),
-        ['\\set ON_ERROR_STOP on', ...[...NUMBERED, '9000_finalise.sql'].map((file) => `\\ir ${file}`), ''].join('\n'),
+        [
+          '\\set ON_ERROR_STOP on',
+          ...['0001_set_unlogged.sql', ...NUMBERED, '9000_finalise.sql'].map((file) => `\\ir ${file}`),
+          '',
+        ].join('\n'),
       );
     });
 

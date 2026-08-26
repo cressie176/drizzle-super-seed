@@ -521,6 +521,7 @@ The generated directory contains:
 ```
 docker/initdb/
   load.psql              # loads the files into a remote database
+  0001_set_unlogged.sql   # makes every table UNLOGGED before its data arrives
   0010_parks.sql          # one file per table, in foreign-key-safe order
   0020_pitches.sql
   ...
@@ -528,7 +529,7 @@ docker/initdb/
   manifest.json          # records how the dataset was generated
 ```
 
-`manifest.json` records the seed, reference date, row counts, trigger handling, generated files and duration. Use it to reproduce the files or verify the row counts after loading.
+`manifest.json` records the seed, reference date, row counts, trigger handling, table logging, generated files and duration. Use it to reproduce the files or verify the row counts after loading.
 
 The directory supports two common loading methods.
 
@@ -554,6 +555,12 @@ psql "$CONNECTION_STRING" -f docker/initdb/load.psql
 By default, each table file sets `session_replication_role = replica` for its session, disabling triggers and foreign key enforcement during the load. The generated data is valid by construction, and omitting these checks improves load performance.
 
 This setting requires superuser rights, which managed services such as RDS, Cloud SQL and Neon do not normally provide. Set `triggerHandling: TriggerHandling.LeaveEnabled` to keep triggers and foreign key checks enabled. The load will remain correct, but will be slower.
+
+Also by default, `0001_set_unlogged.sql` makes every table of the schema `UNLOGGED` before any data arrives: no write-ahead logging, the fastest possible load, and the right trade for a disposable database. Three things to know:
+
+- **The tables stay unlogged after the load.** A crash truncates them, and on a hot standby they are not queryable on replicas. For a test database none of that matters; for anything else, opt out with `tableLogging: TableLogging.LeaveLogged`. (Converting back with `ALTER TABLE ... SET LOGGED` rewrites and WAL-logs the whole table.)
+- **You must own the tables.** No superuser is needed, so unlike the trigger setting this works on managed PostgreSQL, but a restricted loader role that does not own the tables will fail with `must be owner of table ...`; opt out for that case.
+- **A logged table outside the schema referencing a generated one fails the load early** with `ERROR: 42P16: could not change table "parks" to unlogged because it references logged table "audit_log"`. The file itself explains this and names the opt-out. Tables that reference each other in a cycle cannot be flipped one at a time at all, so the file deliberately leaves cycle members (and everything they reference) logged, with a comment saying which.
 
 `9000_finalise.sql` moves every sequence beyond its highest generated ID and runs `ANALYZE`. Subsequent inserts therefore receive unused IDs, and the query planner receives statistics for the loaded data.
 
