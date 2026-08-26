@@ -1,0 +1,41 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      # The databases come from docker compose rather than service containers: the test
+      # helpers reach postgres and mariadb with `docker compose exec`, so the containers must
+      # be compose's own, exactly as the QA workflow starts them.
+      - run: npm run db:up
+      - run: npx biome ci .
+      - run: npm run typecheck
+      - run: npm test
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: drizzle_super_seed
+          PGPASSWORD: drizzle_super_seed
+          PGDATABASE: drizzle_super_seed
+          MARIADB_HOST: localhost
+          MARIADB_PORT: 3306
+          MARIADB_USER: drizzle_super_seed
+          MARIADB_PASSWORD: drizzle_super_seed
+          MARIADB_DATABASE: drizzle_super_seed
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
