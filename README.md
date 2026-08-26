@@ -874,13 +874,14 @@ Query plans are only meaningful against production-shaped data; a missing index 
 
 ## Worked example
 
-The [examples](examples) directory holds seven self-contained packages: six demonstrations of one holiday-park domain, and one real-world schema (parks, pitches, holiday homes, owners, lettings), each a private workspace package you can read, or copy, on its own:
+The [examples](examples) directory holds eight self-contained packages: seven demonstrations of one holiday-park domain, and one real-world schema (parks, pitches, holiday homes, owners, lettings), each a private workspace package you can read, or copy, on its own:
 
 | Example | Shows |
 |---|---|
 | [examples/in-memory](examples/in-memory) | Unit tests over a navigable DataGraph, no database |
 | [examples/batch-insert](examples/batch-insert) | Ordered batches through your own drizzle db.insert, constraints enforced |
 | [examples/postgres](examples/postgres) | Bulk COPY files baked into a Postgres image, loaded at first run or at build time |
+| [examples/postgres-stream](examples/postgres-stream) | One psql script streamed into a spawned psql, no files in between |
 | [examples/mariadb](examples/mariadb) | Extended INSERT files, loaded through mysql2 and baked into a MariaDB image |
 | [examples/sqlite](examples/sqlite) | A complete file-backed .db built through the row batch sink |
 | [examples/csv](examples/csv) | Reviewable RFC 4180 files for spreadsheets and ETL, no database |
