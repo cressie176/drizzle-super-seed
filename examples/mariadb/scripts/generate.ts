@@ -7,9 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { createMariaDbSqlFileSink, generate } from 'drizzle-super-seed';
 import { productionCounts } from '../src/counts.ts';
 import { SEED } from '../src/generators.ts';
+import { generateMigrations, migrationStatements } from '../src/migrations.ts';
 import { rules } from '../src/rules.ts';
 import * as schema from '../src/schema.ts';
-import { generateMigrations, migrationStatements } from '../src/migrations.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const directory = join(here, '..', 'out');

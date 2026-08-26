@@ -18,7 +18,7 @@
     "test": "node --test --test-concurrency=1 'test/**/*.test.js'",
     "coverage": "node --test --test-concurrency=1 --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info 'test/**/*.test.js'",
     "typecheck": "tsc --noEmit",
-    "lint": "biome lint .",
+    "lint": "biome check .",
     "format": "biome format --write .",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",

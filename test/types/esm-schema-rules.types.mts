@@ -4,7 +4,7 @@
 // resolution, leaving `{}` — which accepts any rules object at all, silently.
 import { relations } from 'drizzle-orm';
 import { integer, pgEnum, pgTable, text } from 'drizzle-orm/pg-core';
-import { structuralDefault, type DataGraph, type SchemaRules } from 'drizzle-super-seed';
+import { type DataGraph, type SchemaRules, structuralDefault } from 'drizzle-super-seed';
 
 const region = pgEnum('region', ['north', 'south']);
 
