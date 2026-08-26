@@ -119,6 +119,8 @@ export type ValueGenerator<TValue> = (context: GenerationContext) => TValue;
 
 export const structuralDefault: unique symbol;
 
+export const unseeded: unique symbol;
+
 export type ColumnRule<TValue> = ValueGenerator<TValue> | TValue | typeof structuralDefault;
 
 // Constrained structurally on `$inferInsert`, not on drizzle's `Table`. drizzle ships separate
@@ -134,9 +136,12 @@ export type TableRules<TTable extends InsertableTable> = {
   [K in keyof Required<TTable['$inferInsert']>]: ColumnRule<Required<TTable['$inferInsert']>[K]>;
 };
 
+// Every table key stays mandatory, so a new table in the schema module is a compile-time
+// event; a table the run deliberately does not seed declares so with `unseeded`, one visible
+// line instead of a rules object.
 export type SchemaRules<TSchema> = {
   [K in keyof TSchema as TSchema[K] extends InsertableTable ? K : never]: TSchema[K] extends InsertableTable
-    ? TableRules<TSchema[K]>
+    ? TableRules<TSchema[K]> | typeof unseeded
     : never;
 };
 

@@ -54,6 +54,7 @@ import {
   sequence,
   structuralDefault,
   unique,
+  unseeded,
   weightedPick,
   weightedPickFrom,
   zipfInteger,

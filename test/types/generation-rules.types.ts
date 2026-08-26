@@ -1,4 +1,4 @@
-import { type SchemaRules, type TableRules, structuralDefault } from '../../lib/index';
+import { type SchemaRules, type TableRules, structuralDefault, unseeded } from '../../lib/index';
 import type * as schema from './park-schema';
 
 const completeParkRules = {
@@ -115,3 +115,24 @@ export {
   structuralPitchRules,
   structuralSchemaRules,
 };
+
+// A subset run declares the tables it does not seed rather than omitting them, so drift
+// detection keeps every table key mandatory while skipping costs one line.
+const subsetRules = {
+  parks: structuralParkRules,
+  pitches: unseeded,
+} satisfies SchemaRules<typeof schema>;
+
+const stillMissingATable = {
+  parks: structuralParkRules,
+  // @ts-expect-error pitches must appear, as rules or as unseeded
+} satisfies SchemaRules<typeof schema>;
+
+const notAColumnRule = {
+  parks: {
+    ...structuralParkRules,
+    // @ts-expect-error unseeded is a table-level declaration, not a column rule
+    name: unseeded,
+  },
+  pitches: unseeded,
+} satisfies SchemaRules<typeof schema>;

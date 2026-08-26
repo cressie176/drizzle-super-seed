@@ -191,7 +191,17 @@ const lettingRules = {
 Rules mirror the shape of the schema: one rules object per generated table and one rule per column. Drizzle does not provide a way to attach this metadata directly to tables or columns, so some duplication is unavoidable. The supplied types keep the two aligned:
 
 - `TableRules` requires a correctly typed rule for every **insertable** column, including optional and nullable ones.
-- `SchemaRules` requires a rules object for every table exported by the schema module.
+- `SchemaRules` requires an entry for every table exported by the schema module: a rules object, or the explicit `unseeded` marker for a table this run deliberately does not generate. Skipping a table costs one visible line, adding a table to the schema is still a compile-time event, and an `unseeded` table with a count is refused at run time.
+
+```ts
+export const subsetRules = {
+  parks: structuralParkRules,
+  pitches: pitchRules,
+  owners: ownerRules,
+  holidayHomes: holidayHomeRules,
+  lettings: unseeded,   // exists in the schema, not seeded by this run
+} satisfies SchemaRules<typeof schema>;
+```
 
 #### Columns which take no rule
 
@@ -775,6 +785,7 @@ row is generated.
 | WrongDialectError | a single-dialect sink is given a schema of another dialect |
 | CircularDependencyError | every foreign key in a cycle is NOT NULL |
 | MissingTableRulesError | a counted table has no rules object |
+| UnseededTableCountedError | a table marked unseeded in the rules also has a count |
 | MissingColumnRuleError | a rules object omits a column |
 | UnknownColumnRuleError | a rules object names a column the table does not have |
 | UnknownCountTableError | counts names a table the schema does not have |

@@ -33,6 +33,7 @@ describe('index', () => {
       'sequence',
       'structuralDefault',
       'unique',
+      'unseeded',
       'weightedPick',
       'weightedPickFrom',
       'zipfInteger',
