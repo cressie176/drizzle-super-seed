@@ -1,6 +1,6 @@
 {
   "name": "drizzle-super-seed",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Reproducible random test data for Drizzle ORM schemas",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
