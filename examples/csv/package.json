@@ -1,0 +1,22 @@
+{
+  "name": "@drizzle-super-seed/example-csv",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "drizzle-super-seed CSV files to review, diff or hand to a spreadsheet - no database involved",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx scripts/generate.ts",
+    "test": "tsx --test test/csv.test.ts"
+  },
+  "dependencies": {
+    "@faker-js/faker": "10.6.0",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
