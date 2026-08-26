@@ -8,9 +8,9 @@
     "typecheck": "tsc --noEmit",
     "generate": "tsx scripts/generate.ts",
     "test:image": "tsx --test --test-concurrency=1 test/image.test.ts test/prebaked-image.test.ts",
-    "image:build": "docker build -t drizzle-super-seed-pagila .",
+    "image:build": "npm run generate && docker build -t drizzle-super-seed-pagila .",
     "image:run": "docker run --rm -e POSTGRES_PASSWORD=pagila -e POSTGRES_DB=pagila -p 55433:5432 drizzle-super-seed-pagila",
-    "image:build:prebaked": "docker build -f Dockerfile.prebaked -t drizzle-super-seed-pagila-prebaked .",
+    "image:build:prebaked": "npm run generate && docker build -f Dockerfile.prebaked -t drizzle-super-seed-pagila-prebaked .",
     "image:run:prebaked": "docker run --rm -p 55433:5432 drizzle-super-seed-pagila-prebaked"
   },
   "dependencies": {
