@@ -16,8 +16,24 @@ const CONTAINER = 'drizzle-super-seed-park-smoke';
 const READY_ATTEMPTS = 120;
 const READY_INTERVAL = 1_000;
 
+// Probes go over TCP, not the socket: the entrypoint's temporary init server disables
+// networking, so a TCP probe cannot succeed until the final server is up, data loaded.
 const psql = (statement: string) =>
-  run('docker', ['exec', CONTAINER, 'psql', '-U', 'park', '-d', 'park', '-t', '-A', '-c', statement]);
+  run('docker', [
+    'exec',
+    CONTAINER,
+    'psql',
+    '-h',
+    '127.0.0.1',
+    '-U',
+    'park',
+    '-d',
+    'park',
+    '-t',
+    '-A',
+    '-c',
+    statement,
+  ]);
 
 const waitUntilReady = async () => {
   for (let attempt = 0; attempt < READY_ATTEMPTS; attempt++) {

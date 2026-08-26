@@ -18,8 +18,10 @@ const CONTAINER = 'drizzle-super-seed-park-mariadb-prebaked-smoke';
 const READY_ATTEMPTS = 30;
 const READY_INTERVAL = 1_000;
 
+// Probes go over TCP, not the socket: the entrypoint's temporary init server disables
+// networking, so a TCP probe cannot succeed until the final server is up, data loaded.
 const sql = (statement: string) =>
-  run('docker', ['exec', CONTAINER, 'mariadb', '-upark', '-ppark', 'park', '-N', '-B', '-e', statement]);
+  run('docker', ['exec', CONTAINER, 'mariadb', '-h127.0.0.1', '-upark', '-ppark', 'park', '-N', '-B', '-e', statement]);
 
 const waitUntilReady = async () => {
   for (let attempt = 0; attempt < READY_ATTEMPTS; attempt++) {
