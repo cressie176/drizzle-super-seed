@@ -15,6 +15,18 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   CompositeForeignKeyRuleRequiredError naming the tuple and the remedy: write rules that keep
   it valid together, as the AdventureWorks example demonstrates.
 
+- A worked example for every sink: `examples/postgres-stream` completes the set, streaming a
+  production-shaped load into a spawned psql with no intermediate files.
+- `examples/adventureworks` seeds a real 68-table, five-schema, 90-check database introspected
+  from a live server, alongside the existing Pagila example.
+
+### Changed
+
+- The Pagila and AdventureWorks READMEs are indexed by symptom rather than by feature, so a
+  reader whose schema has the same quirk (non-compiling `drizzle-kit pull` output, a NOT NULL
+  cycle, partitioned tables, composite foreign keys, shared-primary-key subtype chains, a
+  catalogue of CHECK constraints) can find the workaround directly.
+
 ### Removed
 
 - UnsupportedRelationshipError, which existed only to refuse composite foreign keys.
