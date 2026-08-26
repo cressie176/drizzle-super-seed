@@ -24,7 +24,8 @@
     "db:down": "docker compose down",
     "examples:typecheck": "npm run typecheck --workspaces --if-present",
     "examples:test": "npm run test --workspaces --if-present",
-    "examples:image": "npm run test:image --workspaces --if-present"
+    "examples:image": "npm run test:image --workspaces --if-present",
+    "prepublishOnly": "npm run lint && npm run typecheck"
   },
   "peerDependencies": {
     "drizzle-orm": ">=0.36"
@@ -46,9 +47,15 @@
     "drizzle",
     "drizzle-orm",
     "seed",
+    "seeding",
     "test-data",
     "fixtures",
+    "faker",
     "postgresql",
+    "mariadb",
+    "mysql",
+    "sqlite",
+    "csv",
     "typescript"
   ],
   "license": "MIT",
@@ -58,5 +65,10 @@
   },
   "workspaces": [
     "examples/*"
-  ]
+  ],
+  "homepage": "https://github.com/cressie176/drizzle-super-seed#readme",
+  "bugs": {
+    "url": "https://github.com/cressie176/drizzle-super-seed/issues"
+  },
+  "author": "Stephen Cresswell"
 }
