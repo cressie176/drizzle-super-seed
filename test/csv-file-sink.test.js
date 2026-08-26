@@ -51,12 +51,12 @@ describe('the csv file sink', () => {
   it('writes one numbered file per table and a manifest, in dependency order', async () => {
     await generateCsv();
 
-    deq((await readdir(directory)).sort(), ['0010_parks.csv', '0020_pitches.csv', 'manifest.json']);
+    deq((await readdir(directory)).sort(), ['10010_parks.csv', '10020_pitches.csv', 'manifest.json']);
   });
 
   it('writes a header of database column names, then the rows', async () => {
     await generateCsv();
-    const lines = (await readFile(join(directory, '0010_parks.csv'), 'utf8')).split('\n');
+    const lines = (await readFile(join(directory, '10010_parks.csv'), 'utf8')).split('\n');
 
     eq(lines[0], 'id,name,active,opened_at');
     eq(lines[1], '1,"Park, ""the"" 0",1,');
@@ -65,14 +65,14 @@ describe('the csv file sink', () => {
 
   it('omits the header when asked', async () => {
     await generateCsv({ header: false });
-    const [first] = (await readFile(join(directory, '0010_parks.csv'), 'utf8')).split('\n');
+    const [first] = (await readFile(join(directory, '10010_parks.csv'), 'utf8')).split('\n');
 
     match(first, /^1,/);
   });
 
   it('emits the configured null token bare', async () => {
     await generateCsv({ nullToken: '\\N' });
-    const lines = (await readFile(join(directory, '0010_parks.csv'), 'utf8')).split('\n');
+    const lines = (await readFile(join(directory, '10010_parks.csv'), 'utf8')).split('\n');
 
     match(lines[1], /,\\N$/);
   });
@@ -83,7 +83,7 @@ describe('the csv file sink', () => {
 
     eq(recorded.seed, SEED);
     deq(recorded.rowCounts, { parks: 2, pitches: 3 });
-    deq(recorded.files, ['0010_parks.csv', '0020_pitches.csv']);
+    deq(recorded.files, ['10010_parks.csv', '10020_pitches.csv']);
     eq(recorded.header, true);
     eq(recorded.nullToken, '');
     ok(typeof recorded.durationMs === 'number');
@@ -105,7 +105,7 @@ describe('the csv file sink', () => {
       createCsvFileSink({ directory }),
     );
 
-    ok((await readdir(directory)).includes('0010_readings.csv'));
+    ok((await readdir(directory)).includes('10010_readings.csv'));
   });
 
   it('refuses a directory which already holds something', async () => {
@@ -137,7 +137,7 @@ describe('the csv file sink', () => {
     };
 
     await generate(config, createCsvFileSink({ directory }));
-    const lines = (await readFile(join(directory, '0010_halls.csv'), 'utf8')).trim().split('\n').slice(1);
+    const lines = (await readFile(join(directory, '10010_halls.csv'), 'utf8')).trim().split('\n').slice(1);
     const written = lines.map((line) => line.split(',')).map(([id, wardenId]) => [Number(id), wardenId]);
 
     // The same seed through the graph sink gives the rows after its deferred patch; the CSV
@@ -180,6 +180,6 @@ describe('the csv file sink', () => {
     );
 
     const names = (await readdir(directory)).sort();
-    deq(names, ['0010_parks.csv', '0020_halls.csv', '0030_wardens.csv', 'manifest.json']);
+    deq(names, ['10010_parks.csv', '10020_halls.csv', '10030_wardens.csv', 'manifest.json']);
   });
 });

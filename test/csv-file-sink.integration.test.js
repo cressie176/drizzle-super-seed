@@ -45,7 +45,7 @@ describe('csv files through a real COPY', () => {
       createCsvFileSink({ directory }),
     );
 
-    const csv = await readFile(join(directory, '0010_csvProbe.csv'), 'utf8');
+    const csv = await readFile(join(directory, '10010_csvProbe.csv'), 'utf8');
     await executeScript(
       [
         'SET TIME ZONE UTC;',

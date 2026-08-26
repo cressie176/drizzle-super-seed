@@ -69,7 +69,7 @@ const generateInto = (directory, overrides = {}) =>
     }),
   );
 
-const numberedFiles = async (directory) => (await readdir(directory)).filter((file) => /^\d{4}_/.test(file)).sort();
+const numberedFiles = async (directory) => (await readdir(directory)).filter((file) => /^\d{5}_/.test(file)).sort();
 
 const freshDatabase = async (database) => {
   await executeScript(`DROP DATABASE IF EXISTS ${database}`);
@@ -107,7 +107,7 @@ describe('postgres sql file sink', () => {
       for (const file of await numberedFiles(directory)) {
         await executeFile(`${LOADED}/${file}`, { database: LOCAL_DATABASE });
       }
-      await executeFile(`${LOADED}/9000_finalise.sql`, { database: LOCAL_DATABASE });
+      await executeFile(`${LOADED}/99990_finalise.sql`, { database: LOCAL_DATABASE });
     });
 
     after(async () => {
@@ -169,7 +169,7 @@ describe('postgres sql file sink', () => {
     });
 
     it('patches the rows with a single set based update', async () => {
-      const deferred = await readFile(join(directory, '0090_deferred_parks_warden_id.sql'), 'utf8');
+      const deferred = await readFile(join(directory, '10090_deferred_parks_warden_id.sql'), 'utf8');
 
       eq(deferred.split('UPDATE ').length - 1, 1);
       ok(deferred.includes('CREATE TEMP TABLE deferred_parks_warden_id ("id" integer, "warden_id" integer)'));

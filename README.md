@@ -532,11 +532,11 @@ The generated directory contains:
 ```
 docker/initdb/
   load.psql              # loads the files into a remote database
-  0001_set_unlogged.sql   # makes every table UNLOGGED before its data arrives
-  0010_parks.sql          # one file per table, in foreign-key-safe order
-  0020_pitches.sql
+  10000_set_unlogged.sql   # makes every table UNLOGGED before its data arrives
+  10010_parks.sql          # one file per table, in foreign-key-safe order
+  10020_pitches.sql
   ...
-  9000_finalise.sql       # updates sequences and runs ANALYZE
+  99990_finalise.sql       # updates sequences and runs ANALYZE
   manifest.json          # records how the dataset was generated
 ```
 
@@ -567,13 +567,13 @@ By default, each table file sets `session_replication_role = replica` for its se
 
 This setting requires superuser rights, which managed services such as RDS, Cloud SQL and Neon do not normally provide. Set `triggerHandling: TriggerHandling.LeaveEnabled` to keep triggers and foreign key checks enabled. The load will remain correct, but will be slower.
 
-Also by default, `0001_set_unlogged.sql` makes every table of the schema `UNLOGGED` before any data arrives: no write-ahead logging, the fastest possible load, and the right trade for a disposable database. Three things to know:
+Also by default, `10000_set_unlogged.sql` makes every table of the schema `UNLOGGED` before any data arrives: no write-ahead logging, the fastest possible load, and the right trade for a disposable database. Three things to know:
 
 - **The tables stay unlogged after the load.** A crash truncates them, and on a hot standby they are not queryable on replicas. For a test database none of that matters; for anything else, opt out with `tableLogging: TableLogging.LeaveLogged`. (Converting back with `ALTER TABLE ... SET LOGGED` rewrites and WAL-logs the whole table.)
 - **You must own the tables.** No superuser is needed, so unlike the trigger setting this works on managed PostgreSQL, but a restricted loader role that does not own the tables will fail with `must be owner of table ...`; opt out for that case.
 - **A logged table outside the schema referencing a generated one fails the load early** with `ERROR: 42P16: could not change table "parks" to unlogged because it references logged table "audit_log"`. The file itself explains this and names the opt-out. Tables that reference each other in a cycle cannot be flipped one at a time at all, so the file deliberately leaves cycle members (and everything they reference) logged, with a comment saying which.
 
-`9000_finalise.sql` moves every sequence beyond its highest generated ID and runs `ANALYZE`. Subsequent inserts therefore receive unused IDs, and the query planner receives statistics for the loaded data.
+`99990_finalise.sql` moves every sequence beyond its highest generated ID and runs `ANALYZE`. Subsequent inserts therefore receive unused IDs, and the query planner receives statistics for the loaded data.
 
 The files must be run by `psql`, or by the Docker entrypoint which uses it. Inline `COPY ... FROM stdin` is a `psql` capability rather than generic SQL which a database driver can execute.
 
@@ -612,7 +612,7 @@ Both PostgreSQL sinks generate rows as a stream, so memory use remains broadly c
 ### createMariaDbSqlFileSink: bulk load
 
 The MariaDB equivalent of the PostgreSQL file sink. It writes numbered, self-contained table files
-of extended `INSERT` statements, a `9000_finalise.sql` running `ANALYZE TABLE`, a `load.mysql`
+of extended `INSERT` statements, a `99990_finalise.sql` running `ANALYZE TABLE`, a `load.mysql`
 orchestrator, and a `manifest.json`.
 
 ```ts
@@ -711,7 +711,7 @@ const articleRules = {
 
 - **Cyclic foreign keys are silently dropped** - TypeScript declaration order cannot express them, and pull emits nothing where the cycle's second edge belongs. Generated values for that column are then unconstrained integers unless you rule them; pointing them at row numbers of the referenced table works, and a load with constraint checks disabled ends consistent, exactly as the original database's own dumps load. (Had pull kept the edge, a cycle that is `NOT NULL` in both directions is refused by design: a placeholder cannot enter a `NOT NULL` column.)
 - **Partitioned parents are invisible** - the partitions appear as ordinary sibling tables and the parent does not appear at all. Seed one partition directly with a rule that respects its bounds (the rows show through the parent), and mark the rest [unseeded](#schema-completeness).
-- **A trimmed module meets the UNLOGGED default.** Tables you removed from the module still exist in the database, and one of them referencing a generated table fails `0001_set_unlogged.sql` with the documented 42P16 error. Trimmed-module loads generally want `tableLogging: TableLogging.LeaveLogged`.
+- **A trimmed module meets the UNLOGGED default.** Tables you removed from the module still exist in the database, and one of them referencing a generated table fails `10000_set_unlogged.sql` with the documented 42P16 error. Trimmed-module loads generally want `tableLogging: TableLogging.LeaveLogged`.
 
 Two former traps are handled since the validation found them: a pulled serial (`integer` with a `nextval` default) is recognised as sequence-owned and its sequence is advanced by the finalise file, and unique indexes - how introspected schemas usually declare uniqueness - are enforced during generation.
 

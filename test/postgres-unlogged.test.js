@@ -55,16 +55,16 @@ describe('unlogged tables in the psql file sink', () => {
   it('writes the alter file by default, first in the load order', async () => {
     const directory = await generateFiles();
 
-    ok((await readdir(directory)).includes('0001_set_unlogged.sql'));
+    ok((await readdir(directory)).includes('10000_set_unlogged.sql'));
     match(
       await readFile(join(directory, 'load.psql'), 'utf8'),
-      /^\\set ON_ERROR_STOP on\n\\ir 0001_set_unlogged\.sql\n/,
+      /^\\set ON_ERROR_STOP on\n\\ir 10000_set_unlogged\.sql\n/,
     );
   });
 
   it('alters children before parents, every schema table included', async () => {
     const directory = await generateFiles();
-    const script = await readFile(join(directory, '0001_set_unlogged.sql'), 'utf8');
+    const script = await readFile(join(directory, '10000_set_unlogged.sql'), 'utf8');
     const order = [...script.matchAll(/ALTER TABLE "public"\."(\w+)" SET UNLOGGED;/g)].map(([, name]) => name);
 
     deq([...order].sort(), ['inspections', 'parks', 'pitches'].sort());
@@ -74,7 +74,7 @@ describe('unlogged tables in the psql file sink', () => {
 
   it('explains the one failure the file can hit, code and remedy included', async () => {
     const directory = await generateFiles();
-    const script = await readFile(join(directory, '0001_set_unlogged.sql'), 'utf8');
+    const script = await readFile(join(directory, '10000_set_unlogged.sql'), 'utf8');
 
     match(script, /42P16/);
     match(script, /could not change table/);
@@ -86,14 +86,14 @@ describe('unlogged tables in the psql file sink', () => {
     const manifest = JSON.parse(await readFile(join(directory, 'manifest.json'), 'utf8'));
 
     eq(manifest.tableLogging, 'SetUnlogged');
-    eq(manifest.files[0], '0001_set_unlogged.sql');
+    eq(manifest.files[0], '10000_set_unlogged.sql');
   });
 
   it('leaves tables logged when told to, with no trace of the file', async () => {
     const directory = await generateFiles({ tableLogging: TableLogging.LeaveLogged });
     const manifest = JSON.parse(await readFile(join(directory, 'manifest.json'), 'utf8'));
 
-    eq((await readdir(directory)).includes('0001_set_unlogged.sql'), false);
+    eq((await readdir(directory)).includes('10000_set_unlogged.sql'), false);
     doesNotMatch(await readFile(join(directory, 'load.psql'), 'utf8'), /set_unlogged/);
     eq(manifest.tableLogging, 'LeaveLogged');
     eq(
