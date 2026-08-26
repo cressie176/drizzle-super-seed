@@ -3,7 +3,7 @@
 # and anything a RUN step writes under a declared volume path is discarded when the layer
 # commits, so a naive build-time load silently produces an empty database: PGDATA must first be
 # moved somewhere the volume declaration does not cover.
-FROM postgres:18
+FROM postgres:18-alpine
 ENV PGDATA=/var/lib/postgresql/prebaked
 
 COPY drizzle/*.sql /docker-entrypoint-initdb.d/

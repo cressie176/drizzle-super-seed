@@ -1,0 +1,22 @@
+# Loads the data while the image builds, so a container starts serving in a second or two
+# instead of replaying the load on first run. The base image declares VOLUME /var/lib/mysql,
+# and anything a RUN step writes under a declared volume path is discarded when the layer
+# commits, so a naive build-time load silently produces an empty database: the datadir must
+# first be moved somewhere the volume declaration does not cover.
+FROM mariadb:11
+RUN printf '[mysqld]\ndatadir=/var/lib/mysql-prebaked\n' > /etc/mysql/conf.d/prebaked.cnf
+
+COPY out/*.sql /docker-entrypoint-initdb.d/
+
+# The official entrypoint is written to be sourced: docker_mariadb_init is its own init
+# sequence (initdb, temporary server, /docker-entrypoint-initdb.d, shutdown), run here at
+# build time instead of first run.
+RUN set -eu; \
+    mkdir -p /var/lib/mysql-prebaked; \
+    chown -R mysql:mysql /var/lib/mysql-prebaked; \
+    export MARIADB_ROOT_PASSWORD=park MARIADB_DATABASE=park MARIADB_USER=park MARIADB_PASSWORD=park; \
+    gosu mysql bash -e -c ' \
+      source /usr/local/bin/docker-entrypoint.sh; \
+      docker_setup_env mariadbd; \
+      docker_verify_minimum_env; \
+      docker_mariadb_init mariadbd'

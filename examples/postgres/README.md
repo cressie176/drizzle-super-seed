@@ -13,6 +13,12 @@ npm run image:run    # a database with ~27,000 rows, ready on start
 
 `npm run test:image` does all three and audits the running container.
 
+Both Dockerfiles build on `postgres:18-alpine`, which is about a third smaller than the Debian
+image and pulls correspondingly faster. The alpine variant carries the same entrypoint, `bash`
+and `gosu`, so the prebaked build works unchanged; the one behavioural difference is musl libc,
+so text sorts under ICU or C collations rather than glibc locales, which generated test data
+does not notice.
+
 ## Two Dockerfiles
 
 `Dockerfile` copies the files into `/docker-entrypoint-initdb.d/`, so the load replays on a
