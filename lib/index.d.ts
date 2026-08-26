@@ -23,6 +23,7 @@ export interface CanonicalColumn {
   hasDatabaseDefault: boolean;
   isPrimaryKey: boolean;
   sequenceOwned: boolean;
+  sequenceName?: string;
   identityAlways: boolean;
   enumValues?: readonly string[];
   customType?: string;
