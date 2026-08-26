@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const { deepEqual: deq, equal: eq, throws } = require('node:assert');
-const { relations } = require('drizzle-orm');
+const { relations, sql } = require('drizzle-orm');
 const {
   bigint,
   bigserial,
@@ -694,6 +694,23 @@ describe('drizzle schema adapter', () => {
         column: 'pitchId',
         referencedTable: 'pitches',
       });
+    });
+  });
+
+  describe('computed columns', () => {
+    it('excludes a generated always as column, which no insert may ever supply', () => {
+      const measured = pgTable('measured', {
+        id: integer('id').primaryKey(),
+        lengthMinutes: integer('length_minutes').notNull(),
+        lengthHours: integer('length_hours').generatedAlwaysAs(sql`length_minutes / 60`),
+      });
+
+      deq(
+        extractCanonicalSchema({ measured })
+          .tables.get('measured')
+          .columns.map((column) => column.propertyName),
+        ['id', 'lengthMinutes'],
+      );
     });
   });
 
