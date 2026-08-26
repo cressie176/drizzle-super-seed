@@ -874,7 +874,7 @@ Query plans are only meaningful against production-shaped data; a missing index 
 
 ## Worked example
 
-The [examples](examples) directory holds six self-contained demonstrations of one holiday-park domain (parks, pitches, holiday homes, owners, lettings), each a private workspace package you can read, or copy, on its own:
+The [examples](examples) directory holds seven self-contained packages: six demonstrations of one holiday-park domain, and one real-world schema (parks, pitches, holiday homes, owners, lettings), each a private workspace package you can read, or copy, on its own:
 
 | Example | Shows |
 |---|---|
@@ -884,6 +884,7 @@ The [examples](examples) directory holds six self-contained demonstrations of on
 | [examples/mariadb](examples/mariadb) | Extended INSERT files, loaded through mysql2 and baked into a MariaDB image |
 | [examples/sqlite](examples/sqlite) | A complete file-backed .db built through the row batch sink |
 | [examples/csv](examples/csv) | Reviewable RFC 4180 files for spreadsheets and ETL, no database |
+| [examples/pagila](examples/pagila) | The introspection workflow end to end against Pagila, repairs and all |
 
 They share the domain and the faker-driven generators, but each dialect declares its own schema module: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`. There is no hand-written DDL anywhere: every database an example touches is created from its drizzle schema by `drizzle-kit generate`.
 

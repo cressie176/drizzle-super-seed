@@ -1,0 +1,22 @@
+{
+  "name": "@drizzle-super-seed/example-pagila",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "drizzle-super-seed against Pagila: a real introspected schema, repaired, seeded and loaded back",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx scripts/generate.ts",
+    "test": "tsx --test test/pagila.test.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../..",
+    "@faker-js/faker": "10.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
