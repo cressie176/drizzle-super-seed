@@ -60,7 +60,7 @@ describe('nextval defaults', () => {
       },
       createPostgresSqlFileSink({ directory, tableLogging: TableLogging.LeaveLogged }),
     );
-    const rows = (await readFile(join(directory, 'seed-00010_films.sql'), 'utf8'))
+    const rows = (await readFile(join(directory, 'seed-0010_films.sql'), 'utf8'))
       .split('\n')
       .filter((line) => /^\d+\t/.test(line));
 
@@ -80,6 +80,6 @@ describe('nextval defaults', () => {
       createPostgresSqlFileSink({ directory, tableLogging: TableLogging.LeaveLogged }),
     );
 
-    match(await readFile(join(directory, 'seed-99990_finalise.sql'), 'utf8'), /setval\('film_film_id_seq',\s*\(SELECT/);
+    match(await readFile(join(directory, 'seed-9990_finalise.sql'), 'utf8'), /setval\('film_film_id_seq',\s*\(SELECT/);
   });
 });

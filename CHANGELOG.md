@@ -28,8 +28,10 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   digit and loses, so `10010_parks.sql` sorted before `2000_migration.sql`, and data loaded
   before the tail of the migration history that created its tables. A leading letter beats every
   digit in both C and en_US collations, which is what the PostgreSQL and MariaDB entrypoints
-  use. Numbers restart at `00010` within the prefix, and the per-run ceiling rises to 9,998
-  files. A prefix containing a path separator is refused with `InvalidFilePrefixError`.
+  use. Numbers restart at `0010` within the prefix: unlike migrations, which accumulate for the
+  life of a project, a run's files are replaced wholesale each time, so the sequence holds one
+  schema's tables rather than a history, and 998 slots is the ceiling. A prefix containing a
+  path separator is refused with `InvalidFilePrefixError`.
 - The Pagila and AdventureWorks READMEs are indexed by symptom rather than by feature, so a
   reader whose schema has the same quirk (non-compiling `drizzle-kit pull` output, a NOT NULL
   cycle, partitioned tables, composite foreign keys, shared-primary-key subtype chains, a

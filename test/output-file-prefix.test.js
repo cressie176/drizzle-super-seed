@@ -47,9 +47,9 @@ describe('output file prefix', () => {
     deq((await readdir(directory)).sort(), [
       'load.psql',
       'manifest.json',
-      'seed-00000_set_unlogged.sql',
-      'seed-00010_parks.sql',
-      'seed-99990_finalise.sql',
+      'seed-0000_set_unlogged.sql',
+      'seed-0010_parks.sql',
+      'seed-9990_finalise.sql',
     ]);
     await rm(directory, { recursive: true, force: true });
   });
@@ -58,7 +58,7 @@ describe('output file prefix', () => {
     const directory = await generateParks();
     const names = [...(await readdir(directory)).filter((file) => file.startsWith('seed-')), '2000_late_migration.sql'];
 
-    // The bug this prefix fixes: seed-00010_parks.sql sorted before 2000_late_migration.sql, so
+    // The bug this prefix fixes: seed-0010_parks.sql sorted before 2000_late_migration.sql, so
     // generated data loaded before the tail of the migration history created its tables.
     deq(names.sort()[0], '2000_late_migration.sql');
     await rm(directory, { recursive: true, force: true });
@@ -67,24 +67,24 @@ describe('output file prefix', () => {
   it('names the prefixed files in the orchestrator and the manifest', async () => {
     const directory = await generateParks();
 
-    match(await readFile(join(directory, 'load.psql'), 'utf8'), /\\ir seed-00010_parks\.sql/);
+    match(await readFile(join(directory, 'load.psql'), 'utf8'), /\\ir seed-0010_parks\.sql/);
     const manifest = JSON.parse(await readFile(join(directory, 'manifest.json'), 'utf8'));
-    deq(manifest.files, ['seed-00000_set_unlogged.sql', 'seed-00010_parks.sql', 'seed-99990_finalise.sql']);
+    deq(manifest.files, ['seed-0000_set_unlogged.sql', 'seed-0010_parks.sql', 'seed-9990_finalise.sql']);
     await rm(directory, { recursive: true, force: true });
   });
 
   it('takes any prefix the caller prefers', async () => {
     const directory = await generateParks({ filePrefix: 'fixtures_' });
 
-    ok((await readdir(directory)).includes('fixtures_00010_parks.sql'));
-    match(await readFile(join(directory, 'load.psql'), 'utf8'), /\\ir fixtures_00010_parks\.sql/);
+    ok((await readdir(directory)).includes('fixtures_0010_parks.sql'));
+    match(await readFile(join(directory, 'load.psql'), 'utf8'), /\\ir fixtures_0010_parks\.sql/);
     await rm(directory, { recursive: true, force: true });
   });
 
   it('accepts an empty prefix, for a directory holding nothing else', async () => {
     const directory = await generateParks({ filePrefix: '' });
 
-    ok((await readdir(directory)).includes('00010_parks.sql'));
+    ok((await readdir(directory)).includes('0010_parks.sql'));
     await rm(directory, { recursive: true, force: true });
   });
 
@@ -116,8 +116,8 @@ describe('output file prefix', () => {
     deq((await readdir(mariaDirectory)).sort(), [
       'load.mysql',
       'manifest.json',
-      'seed-00010_readings.sql',
-      'seed-99990_finalise.sql',
+      'seed-0010_readings.sql',
+      'seed-9990_finalise.sql',
     ]);
 
     const csvDirectory = await temporaryDirectory();
@@ -125,7 +125,7 @@ describe('output file prefix', () => {
       { schema: { parks }, rules: parkRules, counts: { parks: 2 }, seed: SEED },
       createCsvFileSink({ directory: csvDirectory }),
     );
-    deq((await readdir(csvDirectory)).sort(), ['manifest.json', 'seed-00010_parks.csv']);
+    deq((await readdir(csvDirectory)).sort(), ['manifest.json', 'seed-0010_parks.csv']);
 
     await rm(mariaDirectory, { recursive: true, force: true });
     await rm(csvDirectory, { recursive: true, force: true });

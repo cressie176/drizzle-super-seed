@@ -17,13 +17,13 @@ const HEAP_CEILING = 512 * MEGABYTE;
 const COUNTS = { parks: 2, owners: 4, pitches: 3, holidayHomes: 3, accessories: 2, lettings: 3, parkOwners: 2 };
 
 const NUMBERED = [
-  'seed-00010_parks.sql',
-  'seed-00020_pitches.sql',
-  'seed-00030_owners.sql',
-  'seed-00040_holidayHomes.sql',
-  'seed-00050_accessories.sql',
-  'seed-00060_lettings.sql',
-  'seed-00070_parkOwners.sql',
+  'seed-0010_parks.sql',
+  'seed-0020_pitches.sql',
+  'seed-0030_owners.sql',
+  'seed-0040_holidayHomes.sql',
+  'seed-0050_accessories.sql',
+  'seed-0060_lettings.sql',
+  'seed-0070_parkOwners.sql',
 ];
 
 const structuralRules = (schema) =>
@@ -65,20 +65,20 @@ describe('mariadb sql file sink', () => {
 
   describe('the files it writes', () => {
     it('writes one numbered file per table, a finalise file, an orchestrator and a manifest', async () => {
-      deq((await readdir(directory)).sort(), ['load.mysql', 'manifest.json', ...NUMBERED, 'seed-99990_finalise.sql']);
+      deq((await readdir(directory)).sort(), ['load.mysql', 'manifest.json', ...NUMBERED, 'seed-9990_finalise.sql']);
     });
 
     it('numbers the files so lexical order is dependency order', async () => {
       deq(
         (await readdir(directory))
-          .filter((file) => /^seed-\d{5}_/.test(file) && file !== 'seed-99990_finalise.sql')
+          .filter((file) => /^seed-\d{4}_/.test(file) && file !== 'seed-9990_finalise.sql')
           .sort(),
         NUMBERED,
       );
     });
 
     it('makes each table file self contained', async () => {
-      const parks = await read(directory, 'seed-00010_parks.sql');
+      const parks = await read(directory, 'seed-0010_parks.sql');
 
       ok(parks.startsWith('START TRANSACTION;\nSET foreign_key_checks = 0;\nSET unique_checks = 0;\n'));
       ok(parks.includes('INSERT INTO `parks` (`id`, `name`'));
@@ -93,7 +93,7 @@ describe('mariadb sql file sink', () => {
       const empty = await temporaryDirectory();
       await generateInto(empty, { counts: { parks: 0 } });
 
-      eq(await read(empty, 'seed-00010_parks.sql'), 'START TRANSACTION;\nCOMMIT;\n');
+      eq(await read(empty, 'seed-0010_parks.sql'), 'START TRANSACTION;\nCOMMIT;\n');
       await rm(empty, { recursive: true, force: true });
     });
   });
@@ -102,7 +102,7 @@ describe('mariadb sql file sink', () => {
     it('chunks the rows into statements of its own size, whatever the batch size', async () => {
       const chunked = await temporaryDirectory();
       await generateInto(chunked, { counts: { parks: 5 }, batchSize: 2, rowsPerStatement: 2 });
-      const parks = await read(chunked, 'seed-00010_parks.sql');
+      const parks = await read(chunked, 'seed-0010_parks.sql');
 
       eq(parks.split('INSERT INTO').length - 1, 3);
       eq(parks.split('),\n').length - 1, 2);
@@ -113,7 +113,7 @@ describe('mariadb sql file sink', () => {
       const single = await temporaryDirectory();
       await generateInto(single, { counts: { parks: 5 }, batchSize: 2, rowsPerStatement: 1000 });
 
-      eq((await read(single, 'seed-00010_parks.sql')).split('INSERT INTO').length - 1, 1);
+      eq((await read(single, 'seed-0010_parks.sql')).split('INSERT INTO').length - 1, 1);
       await rm(single, { recursive: true, force: true });
     });
   });
@@ -122,7 +122,7 @@ describe('mariadb sql file sink', () => {
     it('sources every numbered file once, in order', async () => {
       eq(
         await read(directory, 'load.mysql'),
-        `${[...NUMBERED, 'seed-99990_finalise.sql'].map((file) => `source ${file};`).join('\n')}\n`,
+        `${[...NUMBERED, 'seed-9990_finalise.sql'].map((file) => `source ${file};`).join('\n')}\n`,
       );
     });
 
@@ -136,7 +136,7 @@ describe('mariadb sql file sink', () => {
 
   describe('the finalise file', () => {
     it('analyses every table it generated, and fixes up no sequence', async () => {
-      const finalise = await read(directory, 'seed-99990_finalise.sql');
+      const finalise = await read(directory, 'seed-9990_finalise.sql');
 
       eq(finalise.split('ANALYZE TABLE').length - 1, Object.keys(COUNTS).length);
       ok(finalise.includes('ANALYZE TABLE `holiday_homes`;'));
@@ -207,7 +207,7 @@ describe('mariadb sql file sink', () => {
           end: (finished) => sink.end(finished),
         },
       );
-      const { size } = await stat(join(large, 'seed-00010_readings.sql'));
+      const { size } = await stat(join(large, 'seed-0010_readings.sql'));
 
       eq(report.rowCounts.readings, 1_000_000);
       ok(size > 10 * MEGABYTE);

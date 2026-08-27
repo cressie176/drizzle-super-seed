@@ -83,7 +83,7 @@ describe('mariadb sql file sink', () => {
     before(async () => {
       await dropParkSchema(connection);
       await createParkSchema(connection);
-      for (const file of (await readdir(directory)).filter((each) => /^seed-\d{5}_/.test(each)).sort()) {
+      for (const file of (await readdir(directory)).filter((each) => /^seed-\d{4}_/.test(each)).sort()) {
         await executeFile(`${LOADED}/${file}`);
       }
     });

@@ -42,7 +42,7 @@ shows the 6,000 rows arriving through the partitioned parent.
 
 **You trimmed tables from the module, and the UNLOGGED load fails with 42P16.** The trimmed
 partitions still exist in the database and reference `rental`, so the default
-`seed-00000_set_unlogged.sql` file hits `could not change table ... to unlogged`. The generate script
+`seed-0000_set_unlogged.sql` file hits `could not change table ... to unlogged`. The generate script
 opts out with `TableLogging.LeaveLogged`, with the reason at the call site in
 [scripts/generate.ts](scripts/generate.ts).
 

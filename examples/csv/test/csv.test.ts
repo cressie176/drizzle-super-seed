@@ -55,7 +55,7 @@ test('every file holds exactly the rows the manifest records, plus its header', 
 });
 
 test('the header row carries the database column names', async () => {
-  const [header] = recordsOf(await readFile(join(out, 'seed-00020_parks.csv'), 'utf8'));
+  const [header] = recordsOf(await readFile(join(out, 'seed-0020_parks.csv'), 'utf8'));
 
   assert.equal(header, 'id,name,region,opened_at,latitude,amenities,active');
 });
@@ -75,14 +75,14 @@ test('a null is visibly different from an empty string in the raw text', async (
     },
     createCsvFileSink({ directory }),
   );
-  const [, first, second] = recordsOf(await readFile(join(directory, 'seed-00010_owners.csv'), 'utf8'));
+  const [, first, second] = recordsOf(await readFile(join(directory, 'seed-0010_owners.csv'), 'utf8'));
 
   assert.match(first, /,$/, 'a null renders as a bare empty field');
   assert.match(second, /,"",/, 'an empty string renders quoted');
 });
 
 test('a parsed sample row holds realistic values', async () => {
-  const [, sample] = recordsOf(await readFile(join(out, 'seed-00010_owners.csv'), 'utf8'));
+  const [, sample] = recordsOf(await readFile(join(out, 'seed-0010_owners.csv'), 'utf8'));
   const [id, fullName, email] = sample.split(',');
 
   assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);

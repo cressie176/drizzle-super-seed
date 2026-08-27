@@ -140,7 +140,7 @@ describe('custom columns through the csv serialiser', () => {
   const csvRow = async (rules) => {
     const directory = await mkdtemp(join(tmpdir(), 'drizzle-super-seed-'));
     await generate({ schema: { nodes }, rules, counts: { nodes: 1 }, seed: SEED }, createCsvFileSink({ directory }));
-    const [, row] = (await readFile(join(directory, 'seed-00010_nodes.csv'), 'utf8')).trim().split('\n');
+    const [, row] = (await readFile(join(directory, 'seed-0010_nodes.csv'), 'utf8')).trim().split('\n');
     return row;
   };
 
@@ -184,7 +184,7 @@ describe('custom columns through the mariadb serialiser', () => {
       { schema: { places }, rules, counts: { places: 1 }, seed: SEED },
       createMariaDbSqlFileSink({ directory }),
     );
-    return readFile(join(directory, 'seed-00010_places.sql'), 'utf8');
+    return readFile(join(directory, 'seed-0010_places.sql'), 'utf8');
   };
 
   it('writes a string value as a quoted literal, escaped', async () => {

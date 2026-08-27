@@ -67,7 +67,7 @@ describe('postgres sql file sink', () => {
     });
 
     it('writes them all to the file', async () => {
-      const { size } = await stat(join(directory, 'seed-00010_readings.sql'));
+      const { size } = await stat(join(directory, 'seed-0010_readings.sql'));
 
       ok(size > 10 * MEGABYTE, `expected a substantial file, got ${size} bytes`);
     });
