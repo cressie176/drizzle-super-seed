@@ -7,6 +7,7 @@ CREATE TABLE parks (
   opened_at DATE NOT NULL,
   latitude DOUBLE PRECISION,
   amenities JSONB,
+  facilities VARCHAR(40)[],
   active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   warden_id INTEGER

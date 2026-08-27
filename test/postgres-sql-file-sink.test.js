@@ -97,7 +97,7 @@ describe('postgres sql file sink', () => {
 
       ok(
         parks.includes(
-          'COPY "public"."parks" ("id", "name", "region", "opened_at", "latitude", "amenities", "active", "created_at", "warden_id") FROM stdin;',
+          'COPY "public"."parks" ("id", "name", "region", "opened_at", "latitude", "amenities", "facilities", "active", "created_at", "warden_id") FROM stdin;',
         ),
       );
     });
@@ -107,7 +107,7 @@ describe('postgres sql file sink', () => {
       const rows = lines.slice(3, 3 + COUNTS.parks);
 
       eq(rows.length, 2);
-      for (const row of rows) eq(row.split('\t').length, 9);
+      for (const row of rows) eq(row.split('\t').length, 10);
     });
 
     it('writes an empty copy block for a table counted at zero', async () => {

@@ -52,6 +52,7 @@ describe('row batch sink', () => {
         'openedAt',
         'latitude',
         'amenities',
+        'facilities',
         'active',
         'createdAt',
         'wardenId',

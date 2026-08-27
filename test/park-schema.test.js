@@ -134,6 +134,7 @@ describe('park schema fixture', () => {
       deq(nullable, [
         'latitude',
         'amenities',
+        'facilities',
         'warden_id',
         'area_sqm',
         'referred_by_owner_id',

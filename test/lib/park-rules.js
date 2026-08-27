@@ -7,6 +7,7 @@ const structuralParkRules = {
     openedAt: structuralDefault,
     latitude: structuralDefault,
     amenities: structuralDefault,
+    facilities: structuralDefault,
     active: structuralDefault,
     createdAt: structuralDefault,
     wardenId: structuralDefault,

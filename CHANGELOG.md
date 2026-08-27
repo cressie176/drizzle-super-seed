@@ -20,6 +20,15 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 - `examples/adventureworks` seeds a real 68-table, five-schema, 90-check database introspected
   from a live server, alongside the existing Pagila example.
 
+- **PostgreSQL array columns are supported**, at any depth, as `ColumnKind.Array` carrying a
+  recursive element description derived through the existing dialect seams: a `varchar(64)[]`
+  keeps its length and a `pgEnum(...).array()` keeps its values. `structuralDefault` generates a
+  short array of element values, rectangular at every level. Serialisation applies two layers in
+  order - the element's own formatting, then array-literal quoting, then the sink's row escaping
+  - which is what a null element (`NULL`), an element spelling `NULL` (quoted), an empty string
+  (`""`), and an empty array (`{}`, never `\N`) each depend on. A rule must produce a JavaScript
+  array or null; a ragged nested array raises `RaggedArrayError` naming the column.
+
 - **pgvector columns are supported**, as `ColumnKind.Vector` carrying the declared dimension.
   The value is a `number[]` everywhere, matching drizzle, and the serialisers write pgvector's
   `[1,2,3]` literal, which is deliberately not the `{1,2,3}` a PostgreSQL array uses. A vector's

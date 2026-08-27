@@ -13,6 +13,19 @@ export enum ColumnKind {
   Enum = 'Enum',
   Custom = 'Custom',
   Vector = 'Vector',
+  Array = 'Array',
+}
+
+// An array's element is described like a column, minus the things only a column has; nesting
+// recurses, because PostgreSQL accepts an array of any depth in any array column.
+export interface CanonicalElement {
+  kind: ColumnKind;
+  jsType: 'number' | 'string' | 'bigint' | 'boolean' | 'date' | 'json' | 'custom' | 'array';
+  enumValues?: readonly string[];
+  maxLength?: number;
+  precision?: number;
+  scale?: number;
+  element?: CanonicalElement;
 }
 
 export interface CanonicalColumn {
@@ -29,6 +42,7 @@ export interface CanonicalColumn {
   enumValues?: readonly string[];
   customType?: string;
   dimensions?: number;
+  element?: CanonicalElement;
   minValue?: number | bigint;
   maxValue?: number | bigint;
   maxLength?: number;

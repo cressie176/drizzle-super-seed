@@ -96,6 +96,13 @@ const expectedParkSchema = new Map([
       column({ name: 'latitude', propertyName: 'latitude', kind: ColumnKind.Real, jsType: 'number' }),
       column({ name: 'amenities', propertyName: 'amenities', kind: ColumnKind.Json, jsType: 'json' }),
       column({
+        name: 'facilities',
+        propertyName: 'facilities',
+        kind: ColumnKind.Array,
+        jsType: 'array',
+        element: { kind: ColumnKind.Text, jsType: 'string', maxLength: 40 },
+      }),
+      column({
         name: 'active',
         propertyName: 'active',
         kind: ColumnKind.Boolean,

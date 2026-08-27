@@ -30,6 +30,7 @@ describe('installed drizzle-orm introspection', () => {
         ['opened_at', 'PgDateString'],
         ['latitude', 'PgDoublePrecision'],
         ['amenities', 'PgJsonb'],
+        ['facilities', 'PgArray'],
         ['active', 'PgBoolean'],
         ['created_at', 'PgTimestamp'],
         ['warden_id', 'PgInteger'],
@@ -179,7 +180,7 @@ describe('installed drizzle-orm introspection', () => {
         Object.values(getTableColumns(table)).map((column) => column.dataType),
       );
 
-      deq(new Set(representations), new Set(['number', 'string', 'boolean', 'date', 'json']));
+      deq(new Set(representations), new Set(['number', 'string', 'boolean', 'date', 'json', 'array']));
     });
   });
 

@@ -31,6 +31,7 @@ const parks = pgTable('parks', {
   openedAt: date('opened_at').notNull(),
   latitude: doublePrecision('latitude'),
   amenities: jsonb('amenities'),
+  facilities: varchar('facilities', { length: 40 }).array(),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   wardenId: integer('warden_id').references(() => staff.id),
