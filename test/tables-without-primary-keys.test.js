@@ -55,7 +55,7 @@ describe('a table with no primary key', () => {
     const directory = await mkdtemp(join(tmpdir(), 'drizzle-super-seed-'));
     await generateReadings(createPostgresSqlFileSink({ directory }));
 
-    ok((await readdir(directory)).includes('10010_readings.sql'));
+    ok((await readdir(directory)).includes('seed-00010_readings.sql'));
     await rm(directory, { recursive: true, force: true });
   });
 
@@ -90,7 +90,7 @@ describe('a table with no primary key', () => {
       createMariaDbSqlFileSink({ directory }),
     );
 
-    ok((await readdir(directory)).includes('10010_measurements.sql'));
+    ok((await readdir(directory)).includes('seed-00010_measurements.sql'));
     await rm(directory, { recursive: true, force: true });
   });
 

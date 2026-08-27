@@ -338,17 +338,20 @@ export enum TableLogging {
 
 export function createCsvFileSink(options: {
   directory: string;
+  filePrefix?: string;
   header?: boolean;
   nullToken?: string;
 }): GenerationSink<GenerationReport>;
 
 export function createMariaDbSqlFileSink(options: {
   directory: string;
+  filePrefix?: string;
   rowsPerStatement?: number;
 }): GenerationSink<GenerationReport>;
 
 export function createPostgresSqlFileSink(options: {
   directory: string;
+  filePrefix?: string;
   triggerHandling?: TriggerHandling;
   tableLogging?: TableLogging;
 }): GenerationSink<GenerationReport>;

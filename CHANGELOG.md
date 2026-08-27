@@ -22,6 +22,14 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Changed
 
+- **Generated file names now carry a prefix**, `seed-` by default, configurable per file sink
+  with `filePrefix`. A number alone could not keep generated data sorting after a project's
+  migrations: comparing a five-digit name with a four-digit one reaches the separator against a
+  digit and loses, so `10010_parks.sql` sorted before `2000_migration.sql`, and data loaded
+  before the tail of the migration history that created its tables. A leading letter beats every
+  digit in both C and en_US collations, which is what the PostgreSQL and MariaDB entrypoints
+  use. Numbers restart at `00010` within the prefix, and the per-run ceiling rises to 9,998
+  files. A prefix containing a path separator is refused with `InvalidFilePrefixError`.
 - The Pagila and AdventureWorks READMEs are indexed by symptom rather than by feature, so a
   reader whose schema has the same quirk (non-compiling `drizzle-kit pull` output, a NOT NULL
   cycle, partitioned tables, composite foreign keys, shared-primary-key subtype chains, a
