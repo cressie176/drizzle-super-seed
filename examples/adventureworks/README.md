@@ -41,6 +41,17 @@ disables them, so the rules must satisfy every one. The patterns in
 column; and coupled conditions (`billofmaterials`' level, assembly and quantity moving
 together) pin the whole group with `constant`.
 
+**You want data that reads like your domain, not word soup.** The library derives values from
+declared structure only, and deliberately never guesses from column names, so realistic data is
+the rules file's job. [src/rules.ts](src/rules.ts) shows the two patterns worth copying.
+Reference tables (countries, currencies, units of measure, departments, shifts, product
+categories, locations, ship methods, sales territories, special offers) carry their real
+contents as lists indexed by row number, which is deterministic and keeps keys unique, and
+their counts are bound to the list lengths so a key can never repeat. Entity tables compose:
+a product is named for its model, colour and size the way AdventureWorks names one
+("Mountain-100 Black, 42"), a state carries the country it actually belongs to, and a
+subcategory names its own parent so mountain bikes sit under bikes.
+
 **Your schema has shared-primary-key subtype chains.** `businessentity -> person -> employee
 -> salesperson` all share one key space, with vendors and stores carved from the same range.
 Random parent picks fight primary key uniqueness on 1:1 chains, so the pattern is row numbers
