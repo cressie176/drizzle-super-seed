@@ -1,0 +1,26 @@
+{
+  "name": "@drizzle-super-seed/example-bangumi",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "drizzle-super-seed against Bangumi: a drizzle-native MySQL schema with no constraints and many customType columns",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "fetch": "tsx scripts/fetch-schema.ts",
+    "generate": "tsx scripts/generate.ts",
+    "test": "tsx --test test/load.test.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../..",
+    "lodash-es": "^4.17.21",
+    "mysql2": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^22.10.2",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
