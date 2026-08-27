@@ -28,6 +28,7 @@ describe('index', () => {
       'randomInteger',
       'randomTimestampWithinYears',
       'randomUuid',
+      'randomVector',
       'randomWords',
       'selfReference',
       'sequence',

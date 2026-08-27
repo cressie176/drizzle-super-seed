@@ -12,6 +12,7 @@ export enum ColumnKind {
   Json = 'Json',
   Enum = 'Enum',
   Custom = 'Custom',
+  Vector = 'Vector',
 }
 
 export interface CanonicalColumn {
@@ -27,6 +28,7 @@ export interface CanonicalColumn {
   identityAlways: boolean;
   enumValues?: readonly string[];
   customType?: string;
+  dimensions?: number;
   minValue?: number | bigint;
   maxValue?: number | bigint;
   maxLength?: number;
@@ -378,6 +380,8 @@ export function randomBoolean(probabilityTrue?: number): ValueGenerator<boolean>
 export function randomWords(options?: { minLength?: number; maxLength?: number }): ValueGenerator<string>;
 
 export function randomUuid(): ValueGenerator<string>;
+
+export function randomVector(dimensions: number): ValueGenerator<number[]>;
 
 export function randomDateBetween(from: Date, to: Date): ValueGenerator<Date>;
 

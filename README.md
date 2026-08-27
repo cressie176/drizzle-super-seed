@@ -776,6 +776,7 @@ schema never loads half-assigned.
 - A table needs no primary key. Two features do: counting a table [per parent](#counts-and-shape), which iterates the parent's key, and a [deferred foreign key](#self-references-and-cycles), whose second pass patches rows by key. Each raises `MissingPrimaryKeyError` before any row is generated, naming what needed the key.
 - Array columns and exotic types are rejected with a clear error naming the column.
 - Binary columns (`binary`, `varbinary`, `blob`) are rejected the same way, in every dialect. Generating readable words into a column that means bytes would be worse than refusing.
+- [pgvector](https://github.com/pgvector/pgvector) columns are supported. A vector's dimension is exact rather than a maximum, so the only value derivable from the schema is one of the declared size, and that is orders of magnitude more expensive per cell than any other kind. `structuralDefault` therefore fills a `NOT NULL` vector, which demands a value, and leaves a nullable one `null` on every row: unlike every other nullable kind, which is mostly populated. To populate a nullable vector, write it down: `optional(randomVector(1024), 0.5)` reaches the same generator with whatever null rate you want. `randomVector` emits unit vectors, as embedding models do, drawn from the run's seed. A rule producing the wrong number of components fails with `VectorDimensionMismatchError` naming the column, rather than reaching the database.
 - Columns declared with Drizzle's `customType` generate when given an explicit rule; only `structuralDefault` is refused, since a custom type declares nothing a default could be derived from. The file sinks write whatever primitive the rule produced (a string verbatim, with that sink's own escaping), so the rule's author controls the text form the database parses.
 - No incremental seeding into a database that already has data.
 
@@ -819,6 +820,8 @@ row is generated.
 | CustomColumnRuleRequiredError | structuralDefault on a customType column, which declares nothing to derive from |
 | UnsupportedColumnTypeError | a column's type has no generator, naming the drizzle type |
 | CompositeForeignKeyRuleRequiredError | structuralDefault on a composite foreign key member, whose tuple needs one rule per column keeping it valid |
+| UndeclaredVectorDimensionError | structuralDefault on a NOT NULL vector column which declares no dimension |
+| VectorDimensionMismatchError | a rule produced a vector of the wrong length for its column |
 | IncompleteSchemaError | a foreign key points at a table missing from the schema module |
 | MissingPrimaryKeyError | a per-parent count or a deferred foreign key needs a primary key the table has not got |
 | MixedDialectError | one schema module mixes PostgreSQL, MariaDB or SQLite tables |

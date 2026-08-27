@@ -99,9 +99,11 @@ describe('copy text serialisation', () => {
     it('covers every column kind the canonical model has', () => {
       const kinds = new Set([...schema.tables.values()].flatMap((table) => table.columns.map((each) => each.kind)));
 
-      // Custom has no derivable default, so it cannot join a structural-rules fixture; its own
-      // round trip through a real CREATE DOMAIN lives in custom-columns.integration.test.js.
-      deq(kinds, new Set(Object.values(ColumnKind).filter((kind) => kind !== ColumnKind.Custom)));
+      // Custom has no derivable default and Vector needs the pgvector extension, which the
+      // compose image does not carry, so neither can join a structural-rules fixture. Their own
+      // round trips live in custom-columns.integration.test.js and vector-columns.test.js.
+      const separatelyProved = new Set([ColumnKind.Custom, ColumnKind.Vector]);
+      deq(kinds, new Set(Object.values(ColumnKind).filter((kind) => !separatelyProved.has(kind))));
     });
 
     it('accepts explicit values for a generated always identity column', async () => {

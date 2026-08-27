@@ -20,6 +20,17 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 - `examples/adventureworks` seeds a real 68-table, five-schema, 90-check database introspected
   from a live server, alongside the existing Pagila example.
 
+- **pgvector columns are supported**, as `ColumnKind.Vector` carrying the declared dimension.
+  The value is a `number[]` everywhere, matching drizzle, and the serialisers write pgvector's
+  `[1,2,3]` literal, which is deliberately not the `{1,2,3}` a PostgreSQL array uses. A vector's
+  dimension is exact rather than a maximum, so `structuralDefault` fills a NOT NULL vector and
+  leaves a nullable one null on every row, unlike every other nullable kind: filling one is
+  always written down, with `randomVector(n)` or `optional(randomVector(n), rate)`. The new
+  `randomVector` generator emits unit vectors from the run's seed. A rule producing the wrong
+  number of components raises `VectorDimensionMismatchError` naming the column, instead of
+  reaching the database; a NOT NULL vector declaring no dimension raises
+  `UndeclaredVectorDimensionError`.
+
 ### Changed
 
 - **Generated file names now carry a prefix**, `seed-` by default, configurable per file sink
