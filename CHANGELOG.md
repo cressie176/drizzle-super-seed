@@ -16,6 +16,15 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   modes are honoured across the 1.0.0 line - timestamp and date in both object and string modes,
   numeric in string, number and bigint modes, bigint in both modes, jsonb, and serial and
   bigserial sequence counting. (#61)
+- drizzle-orm 1.0.0 also dissolved the wrapper array column: the element column itself carries a
+  dimensions count, so array columns were silently classified as scalars and generated scalar
+  values. The adapter now recognises the count, with the declared kind deciding first since
+  vectors declare dimensions of their own on 0.x, and describes the array and its element from
+  the same column, one dimension at a time: varchar length and enum values survive on the
+  element, and two dimensions, which 1.0.0 declares as array('[][]') because chained array()
+  calls no longer nest, produce nested arrays. A vector's declared size, which 1.0.0 moves from
+  dimensions to length, is read from either, so vectors keep their size instead of degenerating
+  to zero dimensions. (#62)
 
 ## [0.3.0-rc.0] - 2026-08-28
 
