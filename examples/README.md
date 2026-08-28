@@ -33,6 +33,17 @@ workaround.
 | [pagila](pagila) | The drizzle-kit pull workflow end to end: non-compiling output, a NOT NULL cycle, partitions, a trigger-filled tsvector |
 | [adventureworks](adventureworks) | The same at scale: 68 tables, five schemas, 90 checks, composite foreign keys, subtype chains |
 
+## Real schemas, drizzle-native
+
+These start from a schema module somebody else wrote by hand, rather than from a database. Both
+are fetched from a pinned upstream commit rather than vendored, because neither repository's
+licence lets this one redistribute their sources.
+
+| Example | Shows |
+|---|---|
+| [lobechat](lobechat) | 165 PostgreSQL tables: arrays, vectors, composite foreign keys, 24 CHECK constraints, and a foreign key narrower than the column it references |
+| [bangumi](bangumi) | 61 MySQL tables with almost no declared constraints and 65 customType columns, plus the DDL repairs drizzle-kit's output needs |
+
 ## Not an example
 
 [readme](readme) hosts the compilation of every code block in the project README, run by the

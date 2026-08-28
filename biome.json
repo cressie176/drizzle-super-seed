@@ -2,7 +2,16 @@
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
     "include": ["**"],
-    "ignore": ["dist", "coverage", "lcov.info", ".claude", "package.json"]
+    "ignore": [
+      "dist",
+      "coverage",
+      "lcov.info",
+      ".claude",
+      "package.json",
+      "examples/*/upstream",
+      "examples/*/drizzle",
+      "examples/*/out"
+    ]
   },
   "formatter": {
     "enabled": true,
