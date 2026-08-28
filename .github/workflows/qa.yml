@@ -34,6 +34,21 @@ jobs:
           MARIADB_PASSWORD: drizzle_super_seed
           MARIADB_DATABASE: drizzle_super_seed
 
+  # Proves the library against drizzle-orm 1.0.0 by swap-installing the pinned pre-release
+  # over the baseline, so the library resolves it for everything, exactly as a consuming project
+  # on 1.0.0 does. The v1 test file skips itself in the baseline jobs above.
+  drizzle-v1:
+    name: Drizzle 1.0.0 relations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:drizzle-v1
+
   coverage:
     name: Coverage
     runs-on: ubuntu-latest

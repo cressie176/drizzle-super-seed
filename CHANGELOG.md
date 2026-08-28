@@ -4,6 +4,22 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Schemas declared with drizzle-orm 1.0.0's `defineRelations` API generate and navigate in the
+  in-memory graph exactly as `relations()` schemas do. Support is feature-detected from what the
+  installed drizzle-orm exports, so the 0.x path is untouched, and the v0 classes come from the
+  package root or, on 1.0.0, from `drizzle-orm/_relations`. Relations joining through a junction
+  table and relations declaring a where filter are recorded as unresolved: generation succeeds,
+  and walking the navigation property raises `UnresolvableRelationError` naming the limitation,
+  rather than silently returning rows `db.query` would not. Proven by `npm run test:drizzle-v1`,
+  which swap-installs the pinned 1.0.0 pre-release (1.0.0-beta.21) and runs the v1 suite;
+  restore the baseline afterwards with `npm ci`. The peer range stays `>=0.36` until 1.0.0 is
+  generally available, so release-candidate consumers need an npm override or
+  `--legacy-peer-deps` to install.
+
 ## [0.2.0] - 2026-08-28
 
 ### Added

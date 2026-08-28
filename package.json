@@ -16,6 +16,7 @@
   },
   "scripts": {
     "test": "node --test --test-concurrency=1 'test/**/*.test.js'",
+    "test:drizzle-v1": "npm install --no-save drizzle-orm@1.0.0-beta.21 && node --test test/drizzle-v1-relations.test.js",
     "coverage": "node --test --test-concurrency=1 --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info 'test/**/*.test.js'",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
