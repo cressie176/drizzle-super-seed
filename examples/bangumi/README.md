@@ -38,9 +38,12 @@ allows it is what makes this schema seedable at all.
 types through `customType`: 22 varchar, 20 mediumtext, 17 tinyint, 4 text, 2 mediumblob. Because
 `customType` hides the JavaScript representation from drizzle's runtime, `structuralDefault` has
 nothing to derive from and the library refuses to invent one. The canonical schema does expose the
-wrapped SQL type, so `src/rules.ts` dispatches on that. Note that these generators produce the value
-as stored: sinks write SQL directly and never call a `customType`'s `toDriver`, so the
-boolean-over-tinyint columns want 0 and 1 rather than true and false.
+wrapped SQL type, so `src/rules.ts` dispatches on that.
+
+Sinks never call a `customType`'s `toDriver`. They encode a custom value by its JavaScript type,
+each in its own conventions, so a boolean reaches MariaDB as 1 and PostgreSQL as `t`, and a rule can
+return the natural value without knowing which sink it will meet. The tinyint columns here use 0 and
+1 because that is what the column stores and it reads plainly, not because a boolean would fail.
 
 **The typed and dynamic rule paths, and what you give up.** Every one of the 548 columns needs a
 rule, because a missing one is a `MissingColumnRuleError` by design: adding a column to a schema

@@ -3,15 +3,18 @@ const { deepEqual: deq, equal: eq, notEqual: notEq, ok, throws } = require('node
 const {
   bigint,
   bigserial,
+  check,
   date,
   integer,
   numeric,
   pgTable,
   primaryKey,
+  text,
   timestamp,
   uuid,
   varchar,
 } = require('drizzle-orm/pg-core');
+const { sql } = require('drizzle-orm');
 const { extractCanonicalSchema, structuralDefault } = require('../lib');
 const { PlanSource, resolveGenerationPlan } = require('../lib/generation-rules');
 const { orderTablesByDependency } = require('../lib/table-dependency-order');
@@ -140,6 +143,68 @@ describe('generation rules', () => {
 
     it('is the same symbol on every require', () => {
       eq(require('../lib').structuralDefault, structuralDefault);
+    });
+  });
+
+  describe('check constrained columns', () => {
+    const deliveries = pgTable(
+      'deliveries',
+      {
+        id: integer('id').primaryKey(),
+        state: text('state'),
+        sent: integer('sent'),
+        total: integer('total'),
+        note: text('note'),
+      },
+      (table) => [
+        check('state_known', sql`${table.state} IN ('queued', 'sent')`),
+        check('sent_within_total', sql`${table.sent} <= ${table.total}`),
+      ],
+    );
+
+    const deliveryRules = (overrides) => ({
+      deliveries: {
+        id: structuralDefault,
+        state: structuralDefault,
+        sent: structuralDefault,
+        total: structuralDefault,
+        note: structuralDefault,
+        ...overrides,
+      },
+    });
+
+    const planDeliveries = (overrides) => planFor(deliveryRules(overrides), { deliveries: 1 }, { deliveries });
+
+    it('refuses a structural default for a column a check mentions, naming the constraint', () => {
+      throws(() => planDeliveries(), {
+        name: 'CheckConstrainedColumnRuleRequiredError',
+        table: 'deliveries',
+        column: 'state',
+        constraint: 'state_known',
+      });
+    });
+
+    it('quotes the predicate, so the rule to write is visible in the message', () => {
+      throws(() => planDeliveries(), {
+        message: /state IN \('queued', 'sent'\)/,
+      });
+    });
+
+    it('refuses every column a check relates, not only the first', () => {
+      throws(() => planDeliveries({ state: 'queued' }), {
+        column: 'sent',
+        constraint: 'sent_within_total',
+      });
+      throws(() => planDeliveries({ state: 'queued', sent: 1 }), {
+        column: 'total',
+        constraint: 'sent_within_total',
+      });
+    });
+
+    it('accepts an explicit rule, and leaves unconstrained columns structural', () => {
+      const plan = planDeliveries({ state: 'queued', sent: 1, total: 2 });
+
+      eq(entryFor(plan, 'deliveries', 'note').source, PlanSource.StructuralDefault);
     });
   });
 

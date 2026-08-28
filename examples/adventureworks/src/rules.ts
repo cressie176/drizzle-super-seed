@@ -628,7 +628,9 @@ export const rules = {
     billofmaterialsid: structuralDefault,
     productassemblyid: constant(null),
     componentid: structuralDefault,
-    startdate: structuralDefault,
+    // CK_BillOfMaterials_EndDate relates startdate to enddate, so the structural default is
+    // refused here even though a null enddate already satisfies it. Any explicit value will do.
+    startdate: derive((_row, context) => context.referenceDate.toISOString()),
     enddate: constant(null),
     unitmeasurecode: structuralDefault,
     bomlevel: constant(0),

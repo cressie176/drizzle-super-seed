@@ -821,6 +821,7 @@ row is generated.
 | CustomColumnRuleRequiredError | structuralDefault on a customType column, which declares nothing to derive from |
 | UnsupportedColumnTypeError | a column's type has no generator, naming the drizzle type |
 | CompositeForeignKeyRuleRequiredError | structuralDefault on a composite foreign key member, whose tuple needs one rule per column keeping it valid |
+| CheckConstrainedColumnRuleRequiredError | structuralDefault on a column a CHECK constraint mentions, naming the constraint and quoting its predicate |
 | RaggedArrayError | a rule produced a nested array whose sub-arrays have different lengths |
 | UndeclaredVectorDimensionError | structuralDefault on a NOT NULL vector column which declares no dimension |
 | VectorDimensionMismatchError | a rule produced a vector of the wrong length for its column |

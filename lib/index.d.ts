@@ -57,6 +57,14 @@ export interface CanonicalUniqueConstraint {
   nullsNotDistinct: boolean;
 }
 
+// The predicate is the constraint's SQL as drizzle recorded it, with column references resolved to
+// their database names. It is dialect text, not something the library interprets.
+export interface CanonicalCheckConstraint {
+  name: string;
+  columns: string[];
+  predicate: string;
+}
+
 export interface CanonicalCompositeForeignKey {
   columns: string[];
   referencedTableKey: string;
@@ -78,6 +86,7 @@ export interface CanonicalTable {
   foreignKeys: CanonicalForeignKey[];
   compositeForeignKeys: CanonicalCompositeForeignKey[];
   uniqueConstraints: CanonicalUniqueConstraint[];
+  checkConstraints: CanonicalCheckConstraint[];
   drizzleTable: unknown;
 }
 

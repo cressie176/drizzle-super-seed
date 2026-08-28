@@ -4,6 +4,7 @@ const { relations, sql } = require('drizzle-orm');
 const {
   bigint,
   bigserial,
+  check,
   date,
   foreignKey,
   integer,
@@ -44,7 +45,7 @@ const table = (
   key,
   name,
   columns,
-  { primaryKey, foreignKeys = [], compositeForeignKeys = [], uniqueConstraints = [] },
+  { primaryKey, foreignKeys = [], compositeForeignKeys = [], uniqueConstraints = [], checkConstraints = [] },
 ) => [
   key,
   {
@@ -55,6 +56,7 @@ const table = (
     foreignKeys,
     compositeForeignKeys,
     uniqueConstraints,
+    checkConstraints,
     drizzleTable: parkSchema[key],
   },
 ];
@@ -681,6 +683,40 @@ describe('drizzle schema adapter', () => {
 
     it('leaves a nullable column outside the key alone', () => {
       deq([columnNamed('note').notNull, columnNamed('note').isPrimaryKey], [false, false]);
+    });
+  });
+
+  describe('check constraints', () => {
+    // An introspected schema writes the predicate as opaque text with bare identifiers, and a
+    // hand-written one interpolates its columns. Both spellings have to name the same columns.
+    const orders = pgTable(
+      'orders',
+      { id: integer('id').primaryKey(), state: text('state'), sent: integer('sent'), total: integer('total') },
+      (table) => [
+        check('state_known', sql`state IN ('queued', 'sent')`),
+        check('sent_within_total', sql`${table.sent} <= ${table.total}`),
+      ],
+    );
+
+    const constraintNamed = (name) =>
+      extractCanonicalSchema({ orders })
+        .tables.get('orders')
+        .checkConstraints.find((constraint) => constraint.name === name);
+
+    it('finds the columns of an interpolated predicate from its references', () => {
+      deq(constraintNamed('sent_within_total').columns, ['sent', 'total']);
+    });
+
+    it('finds the columns of an opaque predicate by name, as introspected schemas write them', () => {
+      deq(constraintNamed('state_known').columns, ['state']);
+    });
+
+    it('does not mistake a column name inside a string literal for a reference', () => {
+      deq(constraintNamed('state_known').columns.includes('sent'), false);
+    });
+
+    it('keeps the predicate readable, for quoting back at whoever must satisfy it', () => {
+      eq(constraintNamed('sent_within_total').predicate, 'sent <= total');
     });
   });
 

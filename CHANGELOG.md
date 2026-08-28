@@ -40,6 +40,15 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   reaching the database; a NOT NULL vector declaring no dimension raises
   `UndeclaredVectorDimensionError`.
 
+- **CHECK constraints are recorded in the canonical model**, as a name, the columns they mention
+  and the predicate as drizzle recorded it, and `structuralDefault` on a column any check mentions
+  now raises `CheckConstrainedColumnRuleRequiredError`, naming the constraint and quoting the
+  predicate. The predicate itself is opaque dialect SQL and nothing tries to interpret it. The
+  refusal earns its keep because a violated check aborts the whole COPY: measured on LobeChat's 24
+  checks, structural defaults left 8 of the 12 check-carrying tables with no rows at all, so the
+  alternative to refusing is a load that silently drops tables or dies with a database error
+  several steps from the column that caused it.
+
 ### Fixed
 
 - **A member of a table-level composite primary key is no longer modelled as nullable.** drizzle

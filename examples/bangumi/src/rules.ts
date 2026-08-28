@@ -15,9 +15,10 @@ import type { CanonicalColumn, CanonicalSchema, ValueGenerator } from 'drizzle-s
 // nothing to derive from and the library refuses to guess. What it does expose is the wrapped SQL
 // type, which is enough to dispatch on.
 //
-// These generators produce the value as stored, not the value the application sees. Sinks write SQL
-// directly and never call a customType's toDriver, so Bangumi's boolean-over-tinyint columns want
-// 0 and 1 here rather than true and false.
+// Sinks never call a customType's toDriver: they encode a custom value by its JavaScript type, each
+// in its own conventions, so a boolean reaches MariaDB as 1 and PostgreSQL as t. That means a rule
+// can return the natural value and stay sink-unaware. The tinyint columns below use 0 and 1 because
+// that is what the column stores and it reads plainly, not because a boolean would fail.
 type CustomGenerator = () => ValueGenerator<number> | ValueGenerator<string>;
 
 const byWrappedSqlType = new Map<string, CustomGenerator>([

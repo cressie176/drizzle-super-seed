@@ -34,6 +34,9 @@ export const checkConstraintRules: Record<string, Record<string, unknown>> = {
   },
   goalNodes: {
     confidence: randomDecimalString(0, 1, 3),
+    // A task may only hang off a node of kind 'work'; nulling taskId satisfies that, and the
+    // constraint still mentions kind, so kind needs a rule too.
+    kind: constant('work'),
     // A task may only hang off a node of kind 'work', and kind is generated freely.
     taskId: absent(),
   },
@@ -63,6 +66,7 @@ export const checkConstraintRules: Record<string, Record<string, unknown>> = {
   },
   verifyRuns: {
     acceptanceId: absent(),
+    roundIndex: randomInteger(1, 5),
   },
   pushLiveActivities: {
     apnsEnvironment: pickFrom(APNS_ENVIRONMENTS),
@@ -81,6 +85,10 @@ export const checkConstraintRules: Record<string, Record<string, unknown>> = {
     version: randomInteger(1, 5),
   },
   agentInterventionResolutions: {
+    // Demanded because the constraint mentions it, even though nulling custom_execution_state
+    // below already satisfies that constraint. The refusal is per column, not per constraint: it
+    // cannot know which column you intend to satisfy it with, so it asks about each one it sees.
+    status: pickFrom(['resolving', 'published', 'acknowledged', 'completed']),
     expectedItemCount: randomInteger(1, 10),
     version: randomInteger(1, 5),
     // The custom execution columns must be all null or all set to a consistent state. All null is

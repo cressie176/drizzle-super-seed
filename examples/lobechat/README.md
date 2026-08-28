@@ -41,12 +41,20 @@ tuple that does not exist in the parent, and the library refuses rather than emi
 `src/composite-keys.ts` shows the technique: fix the shared key values up front and have parent and
 child draw from the same pools, so every child tuple exists in the parent by construction.
 
-**CHECK constraints are invisible to the canonical schema, and the database will tell you.** This
-is the finding most likely to affect somebody else's schema. drizzle's `check()` is a constraint on
-the table, not a property of the column, so nothing about it reaches the canonical model: a text
-column bounded to 'sandbox' or 'production' looks like any other text column, and
-`structuralDefault` fills it with words. LobeChat declares 24 of them, and `src/check-constraints.ts`
-works through every shape they take:
+**CHECK constraints, and why the library refuses rather than guesses.** LobeChat declares 24 of
+them, and they are the reason this example needs most of its hand-written rules. drizzle's `check()`
+is a constraint on the table and its predicate is opaque SQL, so nothing can tell whether generated
+data would satisfy it. The measurement that settled the design was taken here: with the rules in
+`src/check-constraints.ts` removed, 8 of the 12 check-carrying tables loaded **no rows at all**,
+because a violated check aborts the whole COPY. Structural defaults do not produce slightly wrong
+data on a checked schema, they produce missing tables.
+
+So `structuralDefault` on a column a check mentions now raises
+`CheckConstrainedColumnRuleRequiredError`, naming the constraint and quoting the predicate, which
+usually tells you the rule to write. Foreign keys and sequence-owned columns are exempt: their
+values come from a real parent row or from the engine, not from a guess.
+
+`src/check-constraints.ts` works through every shape the 24 take:
 
 | Constraint shape | Example | What the rule does |
 | --- | --- | --- |
@@ -55,6 +63,10 @@ works through every shape they take:
 | range | version greater than 0 | generate within the range |
 | two columns related | item_index less than item_count | fix the pair together |
 | all null or all set | the six custom execution columns | null the whole group |
+
+The refusal is per column rather than per constraint, so a check you satisfy by nulling one column
+still asks for a rule on the others it mentions. That is deliberate: it cannot know which column you
+intend to satisfy it with. Three of the rules here exist only for that reason, and say so.
 
 **A foreign key narrower than the column it references.** `documents.id` is `varchar(255)`, and
 `document_chunks.document_id`, which references it, is `varchar(30)`. PostgreSQL permits that and
