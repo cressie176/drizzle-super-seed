@@ -78,6 +78,18 @@ in a proposal, check whether you mean "chose not to": a genuine cannot deserves 
 named mechanism in the same breath, and a chose-not-to deserves the alternative sketched so
 the maintainer can overrule cheaply.
 
+## Changelog
+
+Every meaningful change updates CHANGELOG.md in the same commit that makes it: a behaviour
+change, a new capability, a deprecation, a bug fixed, a new example. Not internal refactoring
+that nobody consuming the library could observe. The entry says what changed and why it
+matters to somebody using it, not which files moved; where a decision was settled by
+measurement, the number belongs in the entry, since that is what makes it checkable later.
+
+Keep it in the Keep a Changelog sections, under Unreleased until a release is cut. A change
+worth a commit message explaining why is almost always worth a line here, and the commit is
+the moment to write it, not the release.
+
 ## Gates
 
 npm run lint (biome check: lint, format and import order, exactly what CI enforces), npm run

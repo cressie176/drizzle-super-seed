@@ -19,6 +19,15 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   production-shaped load into a spawned psql with no intermediate files.
 - `examples/real-world/adventureworks` seeds a real 68-table, five-schema, 90-check database introspected
   from a live server, alongside the existing Pagila example.
+- **Two drizzle-native examples**, seeding schemas written by hand rather than introspected.
+  `examples/real-world/lobechat` is 165 PostgreSQL tables and 2228 columns, exercising arrays,
+  vectors, composite foreign keys and 24 CHECK constraints, and loading into a real pgvector
+  server. `examples/real-world/bangumi` is 61 MySQL tables which declare no foreign keys, no
+  unique constraints and a primary key on only 3 of them, with 65 `customType` columns wrapping
+  ordinary SQL types. Both fetch their schema from a pinned upstream commit rather than vendoring
+  it, neither repository's licence permitting redistribution, and both found library defects
+  worth fixing: the composite primary key nullability below, and the CHECK constraint refusal
+  above.
 
 - **PostgreSQL array columns are supported**, at any depth, as `ColumnKind.Array` carrying a
   recursive element description derived through the existing dialect seams: a `varchar(64)[]`
