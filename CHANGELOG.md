@@ -81,6 +81,12 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   it is a single script. The files already carried psql's own copy-from-stdin markers, so this
   costs no portability. MariaDB needs no equivalent: its client stops and exits non-zero already.
 
+- **The fetched-schema examples typecheck from a clean checkout.** `upstream/` is gitignored, so
+  on a fresh clone `examples:typecheck` ran before anything had fetched the schema and failed with
+  `TS2307: Cannot find module '../upstream/schema.ts'`. Both packages now fetch as a `pretypecheck`
+  step, and the fetch returns immediately when the pinned commit is already on disk, so running it
+  before every typecheck and test costs nothing.
+
 - **A boolean rule on a `customType` column is written as `1` or `0` for PostgreSQL**, not `t` or
   `f`. A custom column's wrapped SQL type is an arbitrary dialect string, so the serialiser cannot
   tell a boolean column from a numeric one, and the two spellings are not equally safe: measured,

@@ -3,7 +3,7 @@
 // the archive rather than assumed. Test directories are dropped: they pull in vitest and a live
 // database helper, and nothing here runs them.
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,6 +30,19 @@ const excludeFromTypeChecking = async (directory: string): Promise<void> => {
     await writeFile(file, `// @ts-nocheck\n${await readFile(file, 'utf8')}`);
   }
 };
+
+// The commit is pinned, so a tree already on disk is already the right one. Skipping the download
+// makes this cheap enough to run before every typecheck and test, which is what keeps the package
+// working from a clean checkout without anyone having to remember a step.
+const alreadyFetched = await access(join(destination, 'schemas', 'index.ts')).then(
+  () => true,
+  () => false,
+);
+
+if (alreadyFetched) {
+  console.log(`${REPOSITORY} at ${COMMIT.slice(0, 7)} already fetched`);
+  process.exit(0);
+}
 
 const staging = await mkdtemp(join(tmpdir(), 'lobechat-'));
 const archive = join(staging, 'repo.tar.gz');

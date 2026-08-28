@@ -5,6 +5,7 @@
   "type": "module",
   "description": "drizzle-super-seed against LobeChat: a large drizzle-native PostgreSQL schema with arrays, vectors and composite foreign keys",
   "scripts": {
+    "pretypecheck": "npm run fetch",
     "typecheck": "tsc --noEmit",
     "fetch": "tsx scripts/fetch-schema.ts",
     "generate": "tsx scripts/generate.ts",
