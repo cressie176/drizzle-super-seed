@@ -12,9 +12,15 @@ const SEED = 21;
 // as text and the server does the checking.
 const parkCode = customType({ dataType: () => 'park_code' });
 
+// A customType wrapping a numeric type, which is the case that catches the serialiser out: the
+// wrapped SQL type is an opaque string, so nothing downstream knows a boolean must not be written
+// as PostgreSQL's own 't'.
+const openFlag = customType({ dataType: () => 'smallint' });
+
 const sites = pgTable('sites', {
   id: integer('id').primaryKey(),
   code: parkCode('code').notNull(),
+  open: openFlag('open').notNull(),
 });
 
 describe('a custom domain column through a real load', () => {
@@ -33,6 +39,7 @@ describe('a custom domain column through a real load', () => {
           sites: {
             id: derive((_row, context) => context.rowIndex + 1),
             code: derive((_row, context) => `PK-${String(context.rowIndex).padStart(4, '0')}`),
+            open: derive((_row, context) => context.rowIndex % 2 === 0),
           },
         },
         counts: { sites: 5 },
@@ -46,7 +53,7 @@ describe('a custom domain column through a real load', () => {
         'DROP TABLE IF EXISTS sites;',
         'DROP DOMAIN IF EXISTS park_code;',
         "CREATE DOMAIN park_code AS TEXT CHECK (VALUE ~ '^PK-[0-9]{4}$');",
-        'CREATE TABLE sites (id INTEGER PRIMARY KEY, code park_code NOT NULL);',
+        'CREATE TABLE sites (id INTEGER PRIMARY KEY, code park_code NOT NULL, open SMALLINT NOT NULL);',
         chunks.join(''),
       ].join('\n'),
     );
@@ -59,6 +66,11 @@ describe('a custom domain column through a real load', () => {
   it('loads every row, each value accepted by the domain constraint', async () => {
     eq(await queryValue('SELECT COUNT(*) FROM sites'), '5');
     eq(await queryValue('SELECT code FROM sites WHERE id = 3'), 'PK-0002');
+  });
+
+  it('wrote a boolean rule into the smallint the custom type wraps', async () => {
+    eq(await queryValue('SELECT open FROM sites WHERE id = 1'), '1');
+    eq(await queryValue('SELECT open FROM sites WHERE id = 2'), '0');
   });
 
   it('went unlogged like any other table, the custom column notwithstanding', async () => {

@@ -81,6 +81,14 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   it is a single script. The files already carried psql's own copy-from-stdin markers, so this
   costs no portability. MariaDB needs no equivalent: its client stops and exits non-zero already.
 
+- **A boolean rule on a `customType` column is written as `1` or `0` for PostgreSQL**, not `t` or
+  `f`. A custom column's wrapped SQL type is an arbitrary dialect string, so the serialiser cannot
+  tell a boolean column from a numeric one, and the two spellings are not equally safe: measured,
+  a boolean column accepts `1` and `0` as readily as `t` and `f`, while `smallint` rejects `t`
+  outright with `invalid input syntax`. The numeric spelling is the one that cannot be wrong, and
+  it is what the MariaDB and CSV sinks already wrote. Columns of the real Boolean kind are
+  unchanged, keeping COPY's idiomatic `t` and `f`, since their type is known.
+
 - **A member of a table-level composite primary key is no longer modelled as nullable.** drizzle
   carries `notNull` per column, but `primaryKey({ columns: [...] })` makes its members mandatory
   without touching their declarations, so a schema that declares the key once and never repeats

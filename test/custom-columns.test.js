@@ -125,6 +125,15 @@ describe('custom columns through the serialisers', () => {
     match(script, /park\.zone\\tA/);
   });
 
+  // A custom column's wrapped SQL type is an arbitrary dialect string, so the sink cannot tell a
+  // boolean column from a numeric one. PostgreSQL accepts 1 and 0 for both, and only 1 and 0 for
+  // the numeric one, so that is the spelling which cannot be wrong.
+  it('writes a boolean as 1 or 0, which a numeric column accepts and t would not', async () => {
+    const script = await streamed({ nodes: { id: rowNumber, path: () => true } });
+
+    match(script, /^1\t1$/m);
+  });
+
   it('refuses a value with no text form, naming the column', async () => {
     await rejects(streamed({ nodes: { id: rowNumber, path: () => ({ not: 'text' }) } }), {
       name: 'UnserialisableValueError',
