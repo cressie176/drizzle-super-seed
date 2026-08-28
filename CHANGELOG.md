@@ -51,6 +51,15 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Fixed
 
+- **Every generated PostgreSQL file now sets `\set ON_ERROR_STOP on` itself**, rather than relying
+  on the `load.psql` orchestrator to set it once. psql's default is to report a failed statement,
+  run the rest of the script and exit 0, so a COPY that violated a constraint lost its whole table
+  while the load still reported success to the shell: visible to a human watching the terminal,
+  invisible to any CI step or `RUN` line that checks the exit code. Measured against PostgreSQL 18,
+  the same script now exits 3 and stops. The stream sink writes the guard once at the head, since
+  it is a single script. The files already carried psql's own copy-from-stdin markers, so this
+  costs no portability. MariaDB needs no equivalent: its client stops and exits non-zero already.
+
 - **A member of a table-level composite primary key is no longer modelled as nullable.** drizzle
   carries `notNull` per column, but `primaryKey({ columns: [...] })` makes its members mandatory
   without touching their declarations, so a schema that declares the key once and never repeats

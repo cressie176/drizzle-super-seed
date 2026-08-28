@@ -84,10 +84,26 @@ describe('postgres sql file sink', () => {
       deq(numbered[0], 'seed-0000_set_unlogged.sql');
     });
 
+    // Any one of these may be loaded on its own, or piped into psql, where psql's default is to
+    // report a failed statement, run the rest and exit 0. The guard has to be in the file itself,
+    // not only in the orchestrator, or a lost COPY reports success to the shell.
+    it('stops on the first error in every file it writes, not only through the orchestrator', async () => {
+      const written = (await readdir(directory)).filter((file) => file.endsWith('.sql'));
+
+      ok(written.length > 1);
+      for (const file of written) {
+        ok((await read(directory, file)).startsWith('\\set ON_ERROR_STOP on\n'), `${file} is unguarded`);
+      }
+    });
+
     it('makes each table file self contained', async () => {
       const parks = await read(directory, 'seed-0020_parks.sql');
 
-      ok(parks.startsWith('BEGIN;\nSET session_replication_role = replica;\nCOPY "public"."parks" ('));
+      ok(
+        parks.startsWith(
+          '\\set ON_ERROR_STOP on\nBEGIN;\nSET session_replication_role = replica;\nCOPY "public"."parks" (',
+        ),
+      );
       ok(parks.includes(') FROM stdin;\n'));
       ok(parks.endsWith('\\.\nCOMMIT;\n'));
     });
@@ -104,7 +120,8 @@ describe('postgres sql file sink', () => {
 
     it('writes one tab separated line per row', async () => {
       const lines = (await read(directory, 'seed-0020_parks.sql')).split('\n');
-      const rows = lines.slice(3, 3 + COUNTS.parks);
+      const firstRow = lines.findIndex((line) => line.endsWith('FROM stdin;')) + 1;
+      const rows = lines.slice(firstRow, firstRow + COUNTS.parks);
 
       eq(rows.length, 2);
       for (const row of rows) eq(row.split('\t').length, 10);
@@ -169,7 +186,7 @@ describe('postgres sql file sink', () => {
       const uuidOnly = await temporaryDirectory();
       await generateInto(uuidOnly, { counts: { owners: 2 } });
 
-      eq(await read(uuidOnly, 'seed-9990_finalise.sql'), 'BEGIN;\nCOMMIT;\nANALYZE;\n');
+      eq(await read(uuidOnly, 'seed-9990_finalise.sql'), '\\set ON_ERROR_STOP on\nBEGIN;\nCOMMIT;\nANALYZE;\n');
       await rm(uuidOnly, { recursive: true, force: true });
     });
   });

@@ -37,6 +37,8 @@ const generateTo = (writable, overrides = {}) =>
     createPostgresSqlStreamSink({ writable, triggerHandling: overrides.triggerHandling }),
   );
 
+const GUARD = '\\set ON_ERROR_STOP on\n';
+
 describe('postgres sql stream sink', () => {
   describe('the script it writes', () => {
     it('writes the same sql as the file sink, in one continuous script', async () => {
@@ -58,7 +60,14 @@ describe('postgres sql stream sink', () => {
       const concatenated = [];
       for (const file of files) concatenated.push(await readFile(join(directory, file), 'utf8'));
 
-      eq(stream.text(), concatenated.join(''));
+      // The SQL is identical; only the ON_ERROR_STOP guard is placed differently, and deliberately
+      // so. Every file carries it, because any one of them may be loaded on its own, whereas the
+      // stream is a single script and carries it once at the head.
+      const withoutGuard = (text) => text.replaceAll(GUARD, '');
+
+      eq(withoutGuard(stream.text()), withoutGuard(concatenated.join('')));
+      eq(stream.text().split(GUARD).length - 1, 1);
+      eq(concatenated.join('').split(GUARD).length - 1, files.length);
       await rm(directory, { recursive: true, force: true });
     });
 
