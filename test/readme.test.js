@@ -8,7 +8,7 @@ const { promisify } = require('node:util');
 const run = promisify(execFile);
 
 const REPOSITORY_ROOT = join(__dirname, '..');
-const EXAMPLE = join(REPOSITORY_ROOT, 'examples', 'readme');
+const EXAMPLE = join(REPOSITORY_ROOT, 'readme');
 const BLOCKS = join(EXAMPLE, 'blocks');
 
 const FENCE = /(?:<!-- readme-test: (?<directive>[a-z-]+) -->\n)?```(?<language>\w*)\n(?<body>[\s\S]*?)```/g;

@@ -12,7 +12,7 @@
   "dependencies": {
     "@faker-js/faker": "10.6.0",
     "drizzle-orm": "^0.45.2",
-    "drizzle-super-seed": "file:../..",
+    "drizzle-super-seed": "file:../../..",
     "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {

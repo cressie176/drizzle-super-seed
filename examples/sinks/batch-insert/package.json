@@ -11,7 +11,7 @@
   "dependencies": {
     "@faker-js/faker": "10.6.0",
     "drizzle-orm": "^0.45.2",
-    "drizzle-super-seed": "file:../..",
+    "drizzle-super-seed": "file:../../..",
     "pg": "^8.13.3"
   },
   "devDependencies": {

@@ -17,7 +17,7 @@
   "dependencies": {
     "@faker-js/faker": "10.6.0",
     "drizzle-orm": "^0.45.2",
-    "drizzle-super-seed": "file:../..",
+    "drizzle-super-seed": "file:../../..",
     "mysql2": "^3.24.2"
   },
   "devDependencies": {

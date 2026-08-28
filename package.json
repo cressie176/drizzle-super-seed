@@ -64,7 +64,9 @@
     "url": "https://github.com/cressie176/drizzle-super-seed"
   },
   "workspaces": [
-    "examples/*"
+    "examples/sinks/*",
+    "examples/real-world/*",
+    "readme"
   ],
   "homepage": "https://github.com/cressie176/drizzle-super-seed#readme",
   "bugs": {

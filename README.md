@@ -885,23 +885,25 @@ The [examples](examples) directory holds nine self-contained packages, each one 
 
 | Example | Shows |
 |---|---|
-| [examples/in-memory](examples/in-memory) | Unit tests over a navigable DataGraph, no database |
-| [examples/batch-insert](examples/batch-insert) | Ordered batches through your own drizzle db.insert, constraints enforced |
-| [examples/postgres](examples/postgres) | Bulk COPY files baked into a Postgres image, loaded at first run or at build time |
-| [examples/postgres-stream](examples/postgres-stream) | One psql script streamed into a spawned psql, no files in between |
-| [examples/mariadb](examples/mariadb) | Extended INSERT files, loaded through mysql2 and baked into a MariaDB image |
-| [examples/sqlite](examples/sqlite) | A complete file-backed .db built through the row batch sink |
-| [examples/csv](examples/csv) | Reviewable RFC 4180 files for spreadsheets and ETL, no database |
-| [examples/pagila](examples/pagila) | Pagila introspected, repaired and baked into a Postgres image, one docker run away |
-| [examples/adventureworks](examples/adventureworks) | AdventureWorks at full scale: 68 tables, five schemas, 90 checks, in an image |
+| [examples/sinks/in-memory](examples/sinks/in-memory) | Unit tests over a navigable DataGraph, no database |
+| [examples/sinks/batch-insert](examples/sinks/batch-insert) | Ordered batches through your own drizzle db.insert, constraints enforced |
+| [examples/sinks/postgres](examples/sinks/postgres) | Bulk COPY files baked into a Postgres image, loaded at first run or at build time |
+| [examples/sinks/postgres-stream](examples/sinks/postgres-stream) | One psql script streamed into a spawned psql, no files in between |
+| [examples/sinks/mariadb](examples/sinks/mariadb) | Extended INSERT files, loaded through mysql2 and baked into a MariaDB image |
+| [examples/sinks/sqlite](examples/sinks/sqlite) | A complete file-backed .db built through the row batch sink |
+| [examples/sinks/csv](examples/sinks/csv) | Reviewable RFC 4180 files for spreadsheets and ETL, no database |
+| [examples/real-world/pagila](examples/real-world/pagila) | Pagila introspected, repaired and baked into a Postgres image, one docker run away |
+| [examples/real-world/adventureworks](examples/real-world/adventureworks) | AdventureWorks at full scale: 68 tables, five schemas, 90 checks, in an image |
+| [examples/real-world/lobechat](examples/real-world/lobechat) | 165 drizzle-native Postgres tables: arrays, vectors, composite keys, 24 CHECK constraints |
+| [examples/real-world/bangumi](examples/real-world/bangumi) | 61 drizzle-native MySQL tables with almost no constraints and 65 customType columns |
 
 The park examples share the domain and the faker-driven generators, but each dialect declares its own schema module: `pgTable`, `mysqlTable` and `sqliteTable` are different constructors, and a module mixing them is rejected with `MixedDialectError`. Their databases carry no hand-written DDL: every structure comes from the drizzle schema by `drizzle-kit generate`.
 
-The Pagila and AdventureWorks packages start from a database instead, and their READMEs are indexed by symptom rather than by feature, so you can find the quirk your own schema has and read the workaround for it.
+The real-world packages start from somebody else's schema instead. Pagila and AdventureWorks come from a database, and their READMEs are indexed by symptom rather than by feature, so you can find the quirk your own schema has and read the workaround for it. LobeChat and Bangumi come from hand-written drizzle modules, fetched from a pinned upstream commit rather than vendored, because neither repository's licence lets this one redistribute their sources.
 
 Realistic values come from the faker pattern above: `faker.seed(seed)` once, the same `seed` passed to `generate`, faker called inside `derive` rules. One caveat the examples' tests demonstrate: faker's stream continues across runs within one process, so anything calling `generate` more than once must re-seed faker between runs to replay a dataset.
 
-Every code block in this README is compiled against the published types by the test suite, via the [`examples/readme`](examples/readme) harness package.
+Every code block in this README is compiled against the published types by the test suite, via the [`readme`](readme) harness package.
 
 ## License
 
