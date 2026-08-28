@@ -402,8 +402,16 @@ const expectedParkSchema = new Map([
         jsType: 'number',
         maxValue: INTEGER_MAX,
         notNull: true,
+        isPrimaryKey: true,
       }),
-      column({ name: 'owner_id', propertyName: 'ownerId', kind: ColumnKind.Uuid, jsType: 'string', notNull: true }),
+      column({
+        name: 'owner_id',
+        propertyName: 'ownerId',
+        kind: ColumnKind.Uuid,
+        jsType: 'string',
+        notNull: true,
+        isPrimaryKey: true,
+      }),
     ],
     {
       primaryKey: ['park_id', 'owner_id'],
@@ -645,6 +653,34 @@ describe('drizzle schema adapter', () => {
       const holidayHomes = pgTable('holidayHomes', { pitchId: integer() });
       const canonical = extractCanonicalSchema({ holidayHomes }, { casing: IdentifierCasing.SnakeCase });
       deq(canonical.tables.get('holidayHomes').name, 'holidayHomes');
+    });
+  });
+
+  describe('primary key members', () => {
+    // A table level primaryKey() makes its members NOT NULL in the database without touching the
+    // column declarations, which is why none of these carries .notNull().
+    const chunkLinks = pgTable(
+      'chunk_links',
+      {
+        chunkId: integer('chunk_id'),
+        messageId: varchar('message_id', { length: 40 }),
+        note: varchar('note', { length: 40 }),
+      },
+      (table) => [primaryKey({ columns: [table.chunkId, table.messageId] })],
+    );
+
+    const columnNamed = (name) =>
+      extractCanonicalSchema({ chunkLinks })
+        .tables.get('chunkLinks')
+        .columns.find((column) => column.name === name);
+
+    it('reports a member of a table level primary key as not null and as a primary key', () => {
+      deq([columnNamed('chunk_id').notNull, columnNamed('chunk_id').isPrimaryKey], [true, true]);
+      deq([columnNamed('message_id').notNull, columnNamed('message_id').isPrimaryKey], [true, true]);
+    });
+
+    it('leaves a nullable column outside the key alone', () => {
+      deq([columnNamed('note').notNull, columnNamed('note').isPrimaryKey], [false, false]);
     });
   });
 

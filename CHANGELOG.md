@@ -40,6 +40,16 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   reaching the database; a NOT NULL vector declaring no dimension raises
   `UndeclaredVectorDimensionError`.
 
+### Fixed
+
+- **A member of a table-level composite primary key is no longer modelled as nullable.** drizzle
+  carries `notNull` per column, but `primaryKey({ columns: [...] })` makes its members mandatory
+  without touching their declarations, so a schema that declares the key once and never repeats
+  `.notNull()` was modelled as nullable, and `structuralDefault` could generate a null the
+  database rejects on load. The adapter now reports such a column as `notNull` and as
+  `isPrimaryKey`, so every reader of the canonical model agrees with the database. Found in the
+  wild by the LobeChat validation, where seven columns across three tables were affected.
+
 ### Changed
 
 - **Generated file names now carry a prefix**, `seed-` by default, configurable per file sink

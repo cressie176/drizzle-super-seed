@@ -1,6 +1,17 @@
 const { describe, it } = require('node:test');
 const { deepEqual: deq, equal: eq, notEqual: notEq, ok, throws } = require('node:assert');
-const { bigint, bigserial, date, integer, numeric, pgTable, timestamp, uuid, varchar } = require('drizzle-orm/pg-core');
+const {
+  bigint,
+  bigserial,
+  date,
+  integer,
+  numeric,
+  pgTable,
+  primaryKey,
+  timestamp,
+  uuid,
+  varchar,
+} = require('drizzle-orm/pg-core');
 const { extractCanonicalSchema, structuralDefault } = require('../lib');
 const { PlanSource, resolveGenerationPlan } = require('../lib/generation-rules');
 const { orderTablesByDependency } = require('../lib/table-dependency-order');
@@ -58,6 +69,22 @@ const shortCodes = pgTable('short_codes', {
 
 const shortCodeRules = {
   shortCodes: { id: structuralDefault, code: structuralDefault, amount: structuralDefault },
+};
+
+// A table level primaryKey() makes its members NOT NULL in the database without touching the
+// column declarations, so none of these three carries .notNull().
+const chunkLinks = pgTable(
+  'chunk_links',
+  {
+    chunkId: uuid('chunk_id'),
+    messageId: varchar('message_id', { length: 40 }),
+    note: varchar('note', { length: 40 }),
+  },
+  (table) => [primaryKey({ columns: [table.chunkId, table.messageId] })],
+);
+
+const chunkLinkRules = {
+  chunkLinks: { chunkId: structuralDefault, messageId: structuralDefault, note: structuralDefault },
 };
 
 const everyMode = pgTable('every_mode', {
