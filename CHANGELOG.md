@@ -15,9 +15,9 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   CompositeForeignKeyRuleRequiredError naming the tuple and the remedy: write rules that keep
   it valid together, as the AdventureWorks example demonstrates.
 
-- A worked example for every sink: `examples/postgres-stream` completes the set, streaming a
+- A worked example for every sink: `examples/sinks/postgres-stream` completes the set, streaming a
   production-shaped load into a spawned psql with no intermediate files.
-- `examples/adventureworks` seeds a real 68-table, five-schema, 90-check database introspected
+- `examples/real-world/adventureworks` seeds a real 68-table, five-schema, 90-check database introspected
   from a live server, alongside the existing Pagila example.
 
 - **PostgreSQL array columns are supported**, at any depth, as `ColumnKind.Array` carrying a
@@ -61,6 +61,9 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Changed
 
+- **The examples are split into `examples/sinks` and `examples/real-world`**, separating our own
+  holiday-park domain, one example per sink, from schemas somebody else wrote. The README
+  compilation harness moves to a top-level `readme` package, since it was never an example.
 - **Generated file names now carry a prefix**, `seed-` by default, configurable per file sink
   with `filePrefix`. A number alone could not keep generated data sorting after a project's
   migrations: comparing a five-digit name with a four-digit one reaches the separator against a
