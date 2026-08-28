@@ -35,6 +35,10 @@ was to drop the offending table, one nullable `varchar(64)[]` on `users` cascade
 165 tables had to go. Both types are supported now, and all 165 tables generate and load. Nothing
 in `src/rules.ts` mentions either one; they take the structural default like everything else.
 
+**Rules are 54 decisions, not 2228 entries.** Each table carries `{ [structuralDefaults]: true }`,
+which says once that anything it does not name takes the derived default. Only the columns below
+are named, and each is named for a reason the schema forced.
+
 **Composite foreign keys need rules that keep the tuple together.** Five of them span three tables.
 A member cannot take a structural default, because choosing each column independently produces a
 tuple that does not exist in the parent, and the library refuses rather than emit a broken row.

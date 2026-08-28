@@ -1,14 +1,17 @@
-// LobeChat is 165 tables and 2228 columns. Every column needs a rule, because a missing one is a
-// MissingColumnRuleError by design, so this example builds the rules object from the canonical
-// schema rather than by hand. The trade-off is the same one described in the Bangumi example: the
-// typed path, SchemaRules over the schema module, would make a new table or column a compile time
-// error, and a loop gives that up in exchange for not writing 2228 lines.
+// LobeChat is 165 tables and 2228 columns, and 54 of those columns are an actual decision. The
+// `[structuralDefaults]: true` annotation is what makes that ratio expressible: each table says
+// once that anything it does not name takes the derived default.
 //
-// What is notable here is how little else is needed. Every one of the 2228 columns takes the
-// structural default, arrays and vectors included, with one exception: the members of the five
-// composite foreign keys, which cannot be picked independently (src/composite-keys.ts), and the
-// columns under a CHECK constraint, which the canonical schema cannot see (src/check-constraints.ts).
-import { randomVector, structuralDefault } from 'drizzle-super-seed';
+// What is notable is how few exceptions there are. Arrays and vectors take the structural default
+// like everything else. The named ones are the members of the five composite foreign keys, which
+// cannot be picked independently (src/composite-keys.ts), the columns under a CHECK constraint,
+// which the canonical schema cannot interpret (src/check-constraints.ts), one vector populated
+// deliberately, and one foreign key narrower than what it references (src/narrow-references.ts).
+//
+// The tables are enumerated from the canonical schema rather than written out, because this schema
+// belongs to somebody else and arrives by fetch. For a schema you own, write the rules object out
+// and let SchemaRules make a new table or column a compile-time error.
+import { randomVector, structuralDefaults } from 'drizzle-super-seed';
 import type { CanonicalSchema } from 'drizzle-super-seed';
 import { checkConstraintRules } from './check-constraints.ts';
 import { compositeKeyRules } from './composite-keys.ts';
@@ -25,16 +28,14 @@ const vectorRules: Record<string, Record<string, unknown>> = {
 
 export const buildRules = (canonical: CanonicalSchema): Record<string, Record<string, unknown>> => {
   const rules: Record<string, Record<string, unknown>> = {};
-  for (const [key, table] of canonical.tables) {
-    rules[key] = {};
+  for (const key of canonical.tables.keys()) {
     const overrides = {
       ...(compositeKeyRules[key] ?? {}),
       ...(checkConstraintRules[key] ?? {}),
       ...(vectorRules[key] ?? {}),
       ...(narrowReferenceRules[key] ?? {}),
     };
-    for (const column of table.columns)
-      rules[key][column.propertyName] = overrides[column.propertyName] ?? structuralDefault;
+    rules[key] = { [structuralDefaults]: true, ...overrides };
   }
   return rules;
 };

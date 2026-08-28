@@ -34,6 +34,9 @@ zero `relations()`, and only 3 of the 61 tables declare a primary key. The relat
 but live in application code. drizzle-super-seed used to require more than this; the relaxation that
 allows it is what makes this schema seedable at all.
 
+**Rules are 65 decisions, not 548 entries.** Each table carries `{ [structuralDefaults]: true }`,
+so only the customType columns are named.
+
 **customType columns need a rule each, and cannot be guessed.** 65 columns here wrap ordinary SQL
 types through `customType`: 22 varchar, 20 mediumtext, 17 tinyint, 4 text, 2 mediumblob. Because
 `customType` hides the JavaScript representation from drizzle's runtime, `structuralDefault` has
