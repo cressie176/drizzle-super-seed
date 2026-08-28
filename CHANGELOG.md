@@ -4,6 +4,19 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- drizzle-orm 1.0.0 widened `Column.dataType` from a single token to a space-separated compound
+  ("object date", "string uuid"), which crashed structural defaults and sequence counters with
+  `TypeError: factories[column.jsType] is not a function`. The adapter now normalizes the
+  compound to the single-token jsType the generation factories key on: the base token names the
+  JavaScript representation except for object-backed columns, where the subtype does. Declared
+  modes are honoured across the 1.0.0 line - timestamp and date in both object and string modes,
+  numeric in string, number and bigint modes, bigint in both modes, jsonb, and serial and
+  bigserial sequence counting. (#61)
+
 ## [0.3.0-rc.0] - 2026-08-28
 
 ### Added
