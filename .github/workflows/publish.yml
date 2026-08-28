@@ -36,6 +36,10 @@ jobs:
           MARIADB_USER: drizzle_super_seed
           MARIADB_PASSWORD: drizzle_super_seed
           MARIADB_DATABASE: drizzle_super_seed
+      # Prove the drizzle 1.0.0 path this pre-release exists for, then restore the baseline
+      # install so prepublishOnly's typecheck runs against it rather than the swapped-in build.
+      - run: npm run test:drizzle-v1
+      - run: npm ci
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

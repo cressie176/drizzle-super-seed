@@ -28,6 +28,9 @@
     "examples:image": "npm run test:image --workspaces --if-present",
     "prepublishOnly": "npm run lint && npm run typecheck"
   },
+  "publishConfig": {
+    "tag": "drizzle-1.0.0-rc"
+  },
   "peerDependencies": {
     "drizzle-orm": ">=0.36"
   },
