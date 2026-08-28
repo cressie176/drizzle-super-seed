@@ -40,6 +40,18 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   reaching the database; a NOT NULL vector declaring no dimension raises
   `UndeclaredVectorDimensionError`.
 
+- **Table-level annotations**, as symbol keys on a rules object. `{ [structuralDefaults]: true }`
+  names the columns worth naming and takes the derived default for the rest, so a large schema no
+  longer has to choose between writing one entry per column and abandoning type-level drift
+  detection wholesale: LobeChat needs 54 rules that are an actual decision out of 2228 columns.
+  A rules object without the annotation must still name every column, so strictness is given up
+  only by the table that asks, one visible line at a time. Symbol keys cannot collide with a
+  column, since column keys are strings, and are skipped by `Object.keys` and `JSON.stringify`,
+  so anything walking a rules object for columns still sees only columns. A table annotated
+  `{ [unseeded]: true }` generates nothing and must declare nothing else, which
+  `UnseededTableRuledError` enforces, since column rules that can never run and a second
+  annotation that disagrees are both contradictions rather than preferences.
+
 - **CHECK constraints are recorded in the canonical model**, as a name, the columns they mention
   and the predicate as drizzle recorded it, and `structuralDefault` on a column any check mentions
   now raises `CheckConstrainedColumnRuleRequiredError`, naming the constraint and quoting the
@@ -67,6 +79,13 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   database rejects on load. The adapter now reports such a column as `notNull` and as
   `isPrimaryKey`, so every reader of the canonical model agrees with the database. Found in the
   wild by the LobeChat validation, where seven columns across three tables were affected.
+
+### Deprecated
+
+- **Passing `unseeded` as a table's entire rules value.** Write `{ [unseeded]: true }` instead.
+  The old spelling still compiles and still works, and warns once per table through Node's
+  deprecation channel, but it is no longer documented: annotations are keys now, so a table can
+  carry more than one and future annotations have somewhere to go.
 
 ### Changed
 

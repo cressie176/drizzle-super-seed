@@ -190,7 +190,9 @@ const lettingRules = {
 Rules mirror the shape of the schema: one rules object per generated table and one rule per column. Drizzle does not provide a way to attach this metadata directly to tables or columns, so some duplication is unavoidable. The supplied types keep the two aligned:
 
 - `TableRules` requires a correctly typed rule for every **insertable** column, including optional and nullable ones.
-- `SchemaRules` requires an entry for every table exported by the schema module: a rules object, or the explicit `unseeded` marker for a table this run deliberately does not generate. Skipping a table costs one visible line, adding a table to the schema is still a compile-time event, and an `unseeded` table with a count is refused at run time.
+- `SchemaRules` requires an entry for every table exported by the schema module: a rules object, or `{ [unseeded]: true }` for a table this run deliberately does not generate. Skipping a table costs one visible line, adding a table to the schema is still a compile-time event, and an unseeded table with a count is refused at run time.
+- Table-level annotations are symbol keys rather than strings, so they can never be confused with a column: a schema is free to declare a column called `unseeded`, and the two keys sit side by side. They are also skipped by `Object.keys` and `JSON.stringify`, so anything walking a rules object for columns sees only columns.
+- `{ [structuralDefaults]: true }` names the columns worth naming and takes the derived default for the rest. A rules object without it must still name every column, so strictness is given up only by the table that asks, one visible line at a time.
 
 ```ts
 export const subsetRules = {
@@ -198,7 +200,7 @@ export const subsetRules = {
   pitches: pitchRules,
   owners: ownerRules,
   holidayHomes: holidayHomeRules,
-  lettings: unseeded,   // exists in the schema, not seeded by this run
+  lettings: { [unseeded]: true },   // exists in the schema, not seeded by this run
 } satisfies SchemaRules<typeof schema>;
 ```
 
@@ -822,6 +824,7 @@ row is generated.
 | UnsupportedColumnTypeError | a column's type has no generator, naming the drizzle type |
 | CompositeForeignKeyRuleRequiredError | structuralDefault on a composite foreign key member, whose tuple needs one rule per column keeping it valid |
 | CheckConstrainedColumnRuleRequiredError | structuralDefault on a column a CHECK constraint mentions, naming the constraint and quoting its predicate |
+| UnseededTableRuledError | a table annotated unseeded also declares column rules or another annotation |
 | RaggedArrayError | a rule produced a nested array whose sub-arrays have different lengths |
 | UndeclaredVectorDimensionError | structuralDefault on a NOT NULL vector column which declares no dimension |
 | VectorDimensionMismatchError | a rule produced a vector of the wrong length for its column |

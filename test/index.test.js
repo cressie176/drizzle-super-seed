@@ -33,6 +33,7 @@ describe('index', () => {
       'selfReference',
       'sequence',
       'structuralDefault',
+      'structuralDefaults',
       'unique',
       'unseeded',
       'weightedPick',

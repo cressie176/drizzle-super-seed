@@ -154,6 +154,8 @@ export const structuralDefault: unique symbol;
 
 export const unseeded: unique symbol;
 
+export const structuralDefaults: unique symbol;
+
 export type ColumnRule<TValue> = ValueGenerator<TValue> | TValue | typeof structuralDefault;
 
 // Constrained structurally on `$inferInsert`, not on drizzle's `Table`. drizzle ships separate
@@ -169,12 +171,28 @@ export type TableRules<TTable extends InsertableTable> = {
   [K in keyof Required<TTable['$inferInsert']>]: ColumnRule<Required<TTable['$inferInsert']>[K]>;
 };
 
+// Table-level annotations are symbol keys, so they can never be mistaken for a column: a schema
+// may declare a column called `unseeded` and the two keys coexist. They also sit outside
+// `Object.keys`, so code that walks a rules object for columns sees only columns.
+export type UnseededTable = { [unseeded]: true };
+
+// Names the columns it cares about and takes the structural default for the rest. The strictness
+// is given up only for the table that says so, one visible line at a time; a rules object without
+// the annotation must still name every column.
+export type PartialTableRules<TTable extends InsertableTable> = Partial<TableRules<TTable>> & {
+  [structuralDefaults]: true;
+};
+
 // Every table key stays mandatory, so a new table in the schema module is a compile-time
-// event; a table the run deliberately does not seed declares so with `unseeded`, one visible
-// line instead of a rules object.
+// event; a table the run deliberately does not seed declares so with `{ [unseeded]: true }`, one
+// visible line instead of a rules object.
+//
+// The bare `unseeded` value is the older spelling of the same thing. It still compiles and still
+// works, and warns once per table at runtime, but it is no longer documented: annotations are keys
+// now, so a table can carry more than one and new annotations have somewhere to go.
 export type SchemaRules<TSchema> = {
   [K in keyof TSchema as TSchema[K] extends InsertableTable ? K : never]: TSchema[K] extends InsertableTable
-    ? TableRules<TSchema[K]> | typeof unseeded
+    ? TableRules<TSchema[K]> | PartialTableRules<TSchema[K]> | UnseededTable | typeof unseeded
     : never;
 };
 

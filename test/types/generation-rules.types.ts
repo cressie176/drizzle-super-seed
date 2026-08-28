@@ -1,4 +1,4 @@
-import { type SchemaRules, type TableRules, structuralDefault, unseeded } from '../../lib/index';
+import { type SchemaRules, type TableRules, structuralDefault, structuralDefaults, unseeded } from '../../lib/index';
 import type * as schema from './park-schema';
 
 const completeParkRules = {
@@ -101,6 +101,11 @@ const missingTableRules = {
 } satisfies SchemaRules<typeof schema>;
 
 export {
+  legacyUnseeded,
+  annotatedRules,
+  annotatedButWrongType,
+  annotatedButMisspelled,
+  partialWithoutAnnotation,
   completeParkRules,
   completePitchRules,
   completeSchemaRules,
@@ -120,7 +125,46 @@ export {
 // detection keeps every table key mandatory while skipping costs one line.
 const subsetRules = {
   parks: structuralParkRules,
+  pitches: { [unseeded]: true },
+} satisfies SchemaRules<typeof schema>;
+
+// The older spelling still compiles, so existing rules keep working while the deprecation warning
+// asks for the annotation form.
+const legacyUnseeded = {
+  parks: structuralParkRules,
   pitches: unseeded,
+} satisfies SchemaRules<typeof schema>;
+
+// A table may name the columns worth naming and take the derived default for the rest.
+const annotatedRules = {
+  parks: { [structuralDefaults]: true, region: 'south-west' },
+  pitches: { [structuralDefaults]: true },
+} satisfies SchemaRules<typeof schema>;
+
+// The annotation relaxes only the table carrying it, and only about columns, not their types.
+const annotatedButWrongType = {
+  parks: {
+    [structuralDefaults]: true,
+    // @ts-expect-error region is a text column, so a number is still refused
+    region: 42,
+  },
+  pitches: { [structuralDefaults]: true },
+} satisfies SchemaRules<typeof schema>;
+
+const annotatedButMisspelled = {
+  parks: {
+    [structuralDefaults]: true,
+    // @ts-expect-error nosuchcolumn is not a column of parks
+    nosuchcolumn: 'x',
+  },
+  pitches: { [structuralDefaults]: true },
+} satisfies SchemaRules<typeof schema>;
+
+// Without the annotation a partial rules object is still refused, so strictness is opt-out only.
+const partialWithoutAnnotation = {
+  // @ts-expect-error every column must be named when the table carries no annotation
+  parks: { region: 'south-west' },
+  pitches: { [unseeded]: true },
 } satisfies SchemaRules<typeof schema>;
 
 const stillMissingATable = {
@@ -134,5 +178,5 @@ const notAColumnRule = {
     // @ts-expect-error unseeded is a table-level declaration, not a column rule
     name: unseeded,
   },
-  pitches: unseeded,
+  pitches: { [unseeded]: true },
 } satisfies SchemaRules<typeof schema>;
