@@ -32,6 +32,10 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   listing the foreign keys whose rules must keep the references valid together, such as row
   numbers into their parent tables. A check which also names an ordinary column keeps the
   exemption, since that column's own refusal already puts the constraint in front of the user.
+  The AdventureWorks example met the new refusal on CK_BillOfMaterials_ProductAssemblyID
+  (productassemblyid <> componentid) and now rules componentid explicitly, the same shape as
+  its existing enddate note: refused even though the null assembly already satisfies the
+  predicate, and any explicit value will do.
 
 - An integer array element generated at the full default integer range because the canonical
   element description dropped the column type's value range, so a structural default for
