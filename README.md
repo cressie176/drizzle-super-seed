@@ -824,6 +824,7 @@ row is generated.
 | UnsupportedColumnTypeError | a column's type has no generator, naming the drizzle type |
 | CompositeForeignKeyRuleRequiredError | structuralDefault on a composite foreign key member, whose tuple needs one rule per column keeping it valid |
 | CheckConstrainedColumnRuleRequiredError | structuralDefault on a column a CHECK constraint mentions, naming the constraint and quoting its predicate |
+| CheckConstrainedForeignKeyRuleRequiredError | structuralDefault on a foreign key named by a CHECK constraint which names only foreign keys and engine-numbered columns, so no other column's rule could satisfy it |
 | UnseededTableRuledError | a table annotated unseeded also declares column rules or another annotation |
 | RaggedArrayError | a rule produced a nested array whose sub-arrays have different lengths |
 | UndeclaredVectorDimensionError | structuralDefault on a NOT NULL vector column which declares no dimension |

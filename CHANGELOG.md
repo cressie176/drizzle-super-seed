@@ -8,6 +8,18 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Fixed
 
+- A CHECK constraint naming only foreign key and engine-numbered columns was invisible to the
+  rule refusal: the refusal exempts such columns because a parent reference is not a guess, so
+  nobody was asked for a rule and the first sign of trouble was the database rejecting a COPY
+  mid-load, or an orphan only a post-load audit catches. Found by the MusicBrainz validation
+  (#41, decided in #64), whose non_loop_relationship (entity0 <> entity1) appears on fourteen
+  relationship tables and whose tag_relation orders a pair of foreign keys. structuralDefault
+  on a foreign key named by such a check now raises
+  CheckConstrainedForeignKeyRuleRequiredError, naming the constraint, quoting the predicate and
+  listing the foreign keys whose rules must keep the references valid together, such as row
+  numbers into their parent tables. A check which also names an ordinary column keeps the
+  exemption, since that column's own refusal already puts the constraint in front of the user.
+
 - An integer array element generated at the full default integer range because the canonical
   element description dropped the column type's value range, so a structural default for
   smallint[] produced values PostgreSQL rejects with "out of range for type smallint". Found
