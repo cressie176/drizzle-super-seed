@@ -88,14 +88,39 @@ jobs:
           MARIADB_DATABASE: drizzle_super_seed
       - run: npm run examples:sinks:image
 
-  # The real-world examples run apart from the park-domain ones (#57): they fetch pinned
-  # upstream schemas over the network, pull third-party images, and bake three Postgres images,
-  # so a failure here should read as what it is rather than as a broken library. Only the
-  # generate step exercises the library's plan resolution against these schemas, which is how
-  # an error-contract change once broke AdventureWorks while every cheaper gate stayed green.
+  # The real-world examples run apart from the park-domain ones, one job per database (#57):
+  # they fetch pinned upstream schemas over the network, pull third-party images, and bake
+  # Postgres images, so a failure should name the database it belongs to rather than read as a
+  # broken library - and fail-fast stays off so one unreachable upstream cannot cancel the
+  # rest. The introspected three (Pagila, AdventureWorks, MusicBrainz) bake and audit an
+  # image; LobeChat and Bangumi load into throwaway servers instead, because their schema
+  # modules are upstream source the examples may not redistribute, an image being one push
+  # away from exactly that. These are also the only per-push gates that run generate against
+  # real schemas, which is how an error-contract change once broke AdventureWorks while every
+  # cheaper gate stayed green.
   real-world:
-    name: Real-world examples
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Pagila
+            workspace: examples/real-world/pagila
+            script: test:image
+          - name: AdventureWorks
+            workspace: examples/real-world/adventureworks
+            script: test:image
+          - name: MusicBrainz
+            workspace: examples/real-world/musicbrainz
+            script: test:image
+          - name: LobeChat
+            workspace: examples/real-world/lobechat
+            script: test
+          - name: Bangumi
+            workspace: examples/real-world/bangumi
+            script: test
+            compose: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -103,13 +128,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Only Bangumi loads into the compose MariaDB; the others run their own containers.
       - run: npm run db:up
-      - run: npm run examples:real-world:typecheck
-      - run: npm run examples:real-world:test
+        if: ${{ matrix.compose }}
+      # typecheck first: for LobeChat and Bangumi its pretypecheck step fetches the pinned
+      # upstream schema the load test needs.
+      - run: npm run typecheck --workspace ${{ matrix.workspace }}
+      - run: npm run ${{ matrix.script }} --workspace ${{ matrix.workspace }}
         env:
           MARIADB_HOST: localhost
           MARIADB_PORT: 3306
           MARIADB_USER: drizzle_super_seed
           MARIADB_PASSWORD: drizzle_super_seed
           MARIADB_DATABASE: drizzle_super_seed
-      - run: npm run examples:real-world:image
