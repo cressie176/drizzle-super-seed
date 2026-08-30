@@ -1,0 +1,24 @@
+{
+  "name": "@drizzle-super-seed/example-musicbrainz",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "drizzle-super-seed against MusicBrainz: 372 tables, 770 foreign keys, 663 checks, baked into a Postgres image",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:rules": "tsx scripts/build-rules.ts",
+    "generate": "tsx scripts/generate.ts",
+    "test:image": "tsx --test --test-concurrency=1 test/image.test.ts",
+    "image:build": "npm run generate && docker build -t drizzle-super-seed-musicbrainz .",
+    "image:run": "docker run --rm -e POSTGRES_PASSWORD=mb -e POSTGRES_DB=musicbrainz -p 55435:5432 drizzle-super-seed-musicbrainz"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "drizzle-super-seed": "file:../../.."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
