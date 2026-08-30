@@ -25,6 +25,12 @@
     "examples:typecheck": "npm run typecheck --workspaces --if-present",
     "examples:test": "npm run test --workspaces --if-present",
     "examples:image": "npm run test:image --workspaces --if-present",
+    "examples:sinks:typecheck": "npm run typecheck --workspace examples/sinks --workspace readme --if-present",
+    "examples:sinks:test": "npm run test --workspace examples/sinks --workspace readme --if-present",
+    "examples:sinks:image": "npm run test:image --workspace examples/sinks --if-present",
+    "examples:real-world:typecheck": "npm run typecheck --workspace examples/real-world --if-present",
+    "examples:real-world:test": "npm run test --workspace examples/real-world --if-present",
+    "examples:real-world:image": "npm run test:image --workspace examples/real-world --if-present",
     "prepublishOnly": "npm run lint && npm run typecheck"
   },
   "peerDependencies": {

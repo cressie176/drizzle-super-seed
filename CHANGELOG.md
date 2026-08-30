@@ -21,6 +21,13 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Changed
 
+- CI runs the real-world examples as their own job (#57): they fetch pinned upstream schemas
+  over the network, pull third-party images and bake three Postgres images, so their failures
+  now read as what they are instead of as a broken library, and they no longer serialise behind
+  the park-domain examples. The workspace scripts gained sinks- and real-world-scoped variants
+  (examples:sinks:image, examples:real-world:image and friends); the umbrella examples:test and
+  examples:image gates are unchanged for local use.
+
 - Plan resolution now reports every refusal in one pass instead of throwing at the first
   (#63, from the MusicBrainz validation #41). The walk already visits every table and column,
   so the refusals it raises - missing rules, check-constrained columns, custom types, composite

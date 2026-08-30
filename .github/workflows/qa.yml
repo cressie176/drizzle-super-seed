@@ -73,8 +73,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run db:up
-      - run: npm run examples:typecheck
-      - run: npm run examples:test
+      - run: npm run examples:sinks:typecheck
+      - run: npm run examples:sinks:test
         env:
           PGHOST: localhost
           PGPORT: 5432
@@ -86,4 +86,30 @@ jobs:
           MARIADB_USER: drizzle_super_seed
           MARIADB_PASSWORD: drizzle_super_seed
           MARIADB_DATABASE: drizzle_super_seed
-      - run: npm run examples:image
+      - run: npm run examples:sinks:image
+
+  # The real-world examples run apart from the park-domain ones (#57): they fetch pinned
+  # upstream schemas over the network, pull third-party images, and bake three Postgres images,
+  # so a failure here should read as what it is rather than as a broken library. Only the
+  # generate step exercises the library's plan resolution against these schemas, which is how
+  # an error-contract change once broke AdventureWorks while every cheaper gate stayed green.
+  real-world:
+    name: Real-world examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:up
+      - run: npm run examples:real-world:typecheck
+      - run: npm run examples:real-world:test
+        env:
+          MARIADB_HOST: localhost
+          MARIADB_PORT: 3306
+          MARIADB_USER: drizzle_super_seed
+          MARIADB_PASSWORD: drizzle_super_seed
+          MARIADB_DATABASE: drizzle_super_seed
+      - run: npm run examples:real-world:image
