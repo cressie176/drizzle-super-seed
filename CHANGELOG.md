@@ -6,6 +6,19 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ## [Unreleased]
 
+### Changed
+
+- Plan resolution now reports every refusal in one pass instead of throwing at the first
+  (#63, from the MusicBrainz validation #41). The walk already visits every table and column,
+  so the refusals it raises - missing rules, check-constrained columns, custom types, composite
+  foreign keys and the rest - are collected and thrown together as GenerationPlanRefusalsError,
+  grouped by table with each entry keeping the message it would have carried alone; a lone
+  refusal still throws as itself, so single-problem error contracts are unchanged. Refusals
+  which are facets of one decision, such as each member of a composite foreign key tuple, are
+  reported once. Measured on MusicBrainz, the discovery loop collapses from up to 727 runs to
+  one run producing a 727-entry report, which is the difference tsc demonstrated on the same
+  schema: many errors delivered together are less work than a dozen delivered serially.
+
 ### Fixed
 
 - A CHECK constraint naming only foreign key and engine-numbered columns was invisible to the

@@ -825,6 +825,7 @@ row is generated.
 | CompositeForeignKeyRuleRequiredError | structuralDefault on a composite foreign key member, whose tuple needs one rule per column keeping it valid |
 | CheckConstrainedColumnRuleRequiredError | structuralDefault on a column a CHECK constraint mentions, naming the constraint and quoting its predicate |
 | CheckConstrainedForeignKeyRuleRequiredError | structuralDefault on a foreign key named by a CHECK constraint which names only foreign keys and engine-numbered columns, so no other column's rule could satisfy it |
+| GenerationPlanRefusalsError | more than one of the refusals above arose while resolving the plan; all of them are collected in one pass, grouped by table, each keeping the message it would have carried alone |
 | UnseededTableRuledError | a table annotated unseeded also declares column rules or another annotation |
 | RaggedArrayError | a rule produced a nested array whose sub-arrays have different lengths |
 | UndeclaredVectorDimensionError | structuralDefault on a NOT NULL vector column which declares no dimension |
