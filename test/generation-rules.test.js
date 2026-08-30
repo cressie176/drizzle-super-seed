@@ -9,6 +9,7 @@ const {
   numeric,
   pgTable,
   primaryKey,
+  serial,
   text,
   timestamp,
   uuid,
@@ -205,6 +206,115 @@ describe('generation rules', () => {
       const plan = planDeliveries({ state: 'queued', sent: 1, total: 2 });
 
       eq(entryFor(plan, 'deliveries', 'note').source, PlanSource.StructuralDefault);
+    });
+  });
+
+  describe('check constraints naming only foreign keys', () => {
+    const nodes = pgTable('nodes', { id: integer('id').primaryKey() });
+
+    const relationships = pgTable(
+      'relationships',
+      {
+        id: integer('id').primaryKey(),
+        entity0: integer('entity0')
+          .notNull()
+          .references(() => nodes.id),
+        entity1: integer('entity1')
+          .notNull()
+          .references(() => nodes.id),
+      },
+      (table) => [check('non_loop', sql`${table.entity0} <> ${table.entity1}`)],
+    );
+
+    const relationshipRules = (overrides) => ({
+      nodes: { id: structuralDefault },
+      relationships: { id: structuralDefault, entity0: structuralDefault, entity1: structuralDefault, ...overrides },
+    });
+
+    const planRelationships = (overrides) =>
+      planFor(relationshipRules(overrides), { nodes: 1, relationships: 1 }, { nodes, relationships });
+
+    it('refuses a structural default for a foreign key when the check names only foreign keys', () => {
+      throws(() => planRelationships(), {
+        name: 'CheckConstrainedForeignKeyRuleRequiredError',
+        table: 'relationships',
+        column: 'entity0',
+        constraint: 'non_loop',
+        predicate: /entity0.*<>.*entity1/,
+      });
+    });
+
+    it('names every foreign key the check relates, so the rules can keep them valid together', () => {
+      throws(() => planRelationships(), ({ columns }) => {
+        deq(columns, ['entity0', 'entity1']);
+        return true;
+      });
+    });
+
+    it('refuses each foreign key the check names, not only the first', () => {
+      throws(() => planRelationships({ entity0: 1 }), {
+        name: 'CheckConstrainedForeignKeyRuleRequiredError',
+        column: 'entity1',
+      });
+    });
+
+    it('accepts explicit rules for the foreign keys it names', () => {
+      const plan = planRelationships({ entity0: 1, entity1: 2 });
+
+      eq(entryFor(plan, 'relationships', 'entity0').source, PlanSource.Literal);
+    });
+
+    it('refuses a self reference when the check names only the reference and engine-numbered columns', () => {
+      const categories = pgTable(
+        'categories',
+        {
+          id: serial('id').primaryKey(),
+          parentId: integer('parent_id').references(() => categories.id),
+        },
+        (table) => [check('not_own_parent', sql`${table.parentId} <> ${table.id}`)],
+      );
+
+      throws(
+        () =>
+          planFor(
+            { categories: { id: structuralDefault, parentId: structuralDefault } },
+            { categories: 1 },
+            { categories },
+          ),
+        {
+          name: 'CheckConstrainedForeignKeyRuleRequiredError',
+          table: 'categories',
+          column: 'parentId',
+          constraint: 'not_own_parent',
+        },
+      );
+    });
+
+    it('keeps the exemption when the check also names a column a rule is demanded for', () => {
+      const memberships = pgTable(
+        'memberships',
+        {
+          id: integer('id').primaryKey(),
+          nodeId: integer('node_id').references(() => nodes.id),
+          role: text('role'),
+        },
+        (table) => [check('role_for_node', sql`${table.nodeId} IS NULL OR ${table.role} IS NOT NULL`)],
+      );
+
+      const planMemberships = (overrides) =>
+        planFor(
+          {
+            nodes: { id: structuralDefault },
+            memberships: { id: structuralDefault, nodeId: structuralDefault, role: structuralDefault, ...overrides },
+          },
+          { nodes: 1, memberships: 1 },
+          { nodes, memberships },
+        );
+
+      throws(() => planMemberships(), { name: 'CheckConstrainedColumnRuleRequiredError', column: 'role' });
+
+      const plan = planMemberships({ role: 'admin' });
+      eq(entryFor(plan, 'memberships', 'nodeId').source, PlanSource.EngineManaged);
     });
   });
 
