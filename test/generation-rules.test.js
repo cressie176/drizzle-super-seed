@@ -192,14 +192,17 @@ describe('generation rules', () => {
     });
 
     it('refuses every column a check relates, in the same pass', () => {
-      throws(() => planDeliveries({ state: 'queued' }), ({ name, refusals }) => {
-        eq(name, 'GenerationPlanRefusalsError');
-        deq(
-          refusals.map(({ column }) => column),
-          ['sent', 'total'],
-        );
-        return true;
-      });
+      throws(
+        () => planDeliveries({ state: 'queued' }),
+        ({ name, refusals }) => {
+          eq(name, 'GenerationPlanRefusalsError');
+          deq(
+            refusals.map(({ column }) => column),
+            ['sent', 'total'],
+          );
+          return true;
+        },
+      );
     });
 
     it('accepts an explicit rule, and leaves unconstrained columns structural', () => {
@@ -237,33 +240,45 @@ describe('generation rules', () => {
     };
 
     it('collects every refusal across every table before throwing', () => {
-      throws(() => planBoth(structuralRules), ({ name, refusals }) => {
-        eq(name, 'GenerationPlanRefusalsError');
-        deq(
-          refusals.map(({ table, column }) => `${table}.${column}`),
-          ['suppliers.rating', 'shipments.weight'],
-        );
-        return true;
-      });
+      throws(
+        () => planBoth(structuralRules),
+        ({ name, refusals }) => {
+          eq(name, 'GenerationPlanRefusalsError');
+          deq(
+            refusals.map(({ table, column }) => `${table}.${column}`),
+            ['suppliers.rating', 'shipments.weight'],
+          );
+          return true;
+        },
+      );
     });
 
     it('keeps each refusal as the error it would have been alone', () => {
-      throws(() => planBoth(structuralRules), ({ refusals }) => {
-        deq(
-          refusals.map(({ name }) => name),
-          ['CheckConstrainedColumnRuleRequiredError', 'CheckConstrainedColumnRuleRequiredError'],
-        );
-        return true;
-      });
+      throws(
+        () => planBoth(structuralRules),
+        ({ refusals }) => {
+          deq(
+            refusals.map(({ name }) => name),
+            ['CheckConstrainedColumnRuleRequiredError', 'CheckConstrainedColumnRuleRequiredError'],
+          );
+          return true;
+        },
+      );
     });
 
     it('groups the message by table, keeping each refusal message intact', () => {
-      throws(() => planBoth(structuralRules), ({ message }) => {
-        ok(/2 refusals across 2 tables/.test(message), message);
-        ok(/suppliers:\n- Column suppliers\.rating is constrained by the check rating_range/.test(message), message);
-        ok(/shipments:\n- Column shipments\.weight is constrained by the check weight_positive/.test(message), message);
-        return true;
-      });
+      throws(
+        () => planBoth(structuralRules),
+        ({ message }) => {
+          ok(/2 refusals across 2 tables/.test(message), message);
+          ok(/suppliers:\n- Column suppliers\.rating is constrained by the check rating_range/.test(message), message);
+          ok(
+            /shipments:\n- Column shipments\.weight is constrained by the check weight_positive/.test(message),
+            message,
+          );
+          return true;
+        },
+      );
     });
 
     it('collects refusals of different classes together', () => {
