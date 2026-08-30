@@ -23,6 +23,8 @@ seedFaker(SEED);
 
 const rowNumber = derive((_row, context) => context.rowIndex + 1);
 
+const PRODUCT_COUNT = 500;
+
 const PERSONS = 1000;
 const VENDORS = 300;
 const STORES = 200;
@@ -561,7 +563,7 @@ export const counts: Record<string, number> = {
   documentInProduction: DOCUMENT_TITLES.length,
   illustrationInProduction: 30,
   locationInProduction: LOCATIONS.length,
-  productInProduction: 500,
+  productInProduction: PRODUCT_COUNT,
   productcategoryInProduction: PRODUCT_CATEGORIES.length,
   productsubcategoryInProduction: PRODUCT_SUBCATEGORIES.length,
   productmodelInProduction: PRODUCT_MODELS.length,
@@ -627,7 +629,10 @@ export const rules = {
   billofmaterialsInProduction: {
     billofmaterialsid: structuralDefault,
     productassemblyid: constant(null),
-    componentid: structuralDefault,
+    // CK_BillOfMaterials_ProductAssemblyID (productassemblyid <> componentid) names only
+    // foreign keys, so the structural default is refused even though the null assembly above
+    // already satisfies it. A product row number keeps the reference valid explicitly.
+    componentid: derive((_row, context) => (context.rowIndex % PRODUCT_COUNT) + 1),
     // CK_BillOfMaterials_EndDate relates startdate to enddate, so the structural default is
     // refused here even though a null enddate already satisfies it. Any explicit value will do.
     startdate: derive((_row, context) => context.referenceDate.toISOString()),
