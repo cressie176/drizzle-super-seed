@@ -44,6 +44,15 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   (examples:sinks:image, examples:real-world:image and friends); the umbrella examples:test and
   examples:image gates are unchanged for local use.
 
+- CI runs the real-world examples as one job per database - Pagila, AdventureWorks,
+  MusicBrainz, LobeChat, Bangumi - with fail-fast off (#57). They fetch pinned upstream
+  schemas over the network, pull third-party images and bake Postgres images, so a failure now
+  names the database it belongs to instead of reading as a broken library, one unreachable
+  upstream cannot cancel the rest, and none of it serialises behind the park-domain examples.
+  The workspace scripts gained sinks- and real-world-scoped variants (examples:sinks:image,
+  examples:real-world:image and friends) for local use; the umbrella examples:test and
+  examples:image gates are unchanged.
+
 - Plan resolution now reports every refusal in one pass instead of throwing at the first
   (#63, from the MusicBrainz validation #41). The walk already visits every table and column,
   so the refusals it raises - missing rules, check-constrained columns, custom types, composite
