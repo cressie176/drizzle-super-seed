@@ -11,6 +11,7 @@ const {
   pgEnum,
   pgTable,
   serial,
+  smallint,
   timestamp,
   uuid,
   varchar,
@@ -95,6 +96,7 @@ const mood = pgEnum('mood', ['happy', 'grumpy']);
 const crates = pgTable('crates', {
   id: serial('id').primaryKey(),
   counts: integer('counts').array().notNull(),
+  sizes: smallint('sizes').array().notNull(),
   labels: varchar('labels', { length: 8 }).array().notNull(),
   grid: varchar('grid', { length: 8 }).array('[][]').notNull(),
   moods: mood('moods').array().notNull(),
@@ -122,6 +124,16 @@ describe('array columns under drizzle 1.0.0 column typing', { skip: !available }
       for (const count of row.counts) eq(typeof count, 'number');
       ok(Array.isArray(row.takenAt), `takenAt should be an array, got ${typeof row.takenAt}`);
       for (const taken of row.takenAt) ok(taken instanceof Date, `element should be a Date, got ${typeof taken}`);
+    }
+  });
+
+  it('keeps the element value range: smallint elements stay within smallint', async () => {
+    const data = await generateCrates();
+
+    for (const row of data.rows.crates) {
+      for (const size of row.sizes) {
+        ok(Number.isInteger(size) && size >= 0 && size <= 32_767, `element ${size} should fit a smallint`);
+      }
     }
   });
 

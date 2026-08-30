@@ -22,6 +22,8 @@ export interface CanonicalElement {
   kind: ColumnKind;
   jsType: 'number' | 'string' | 'bigint' | 'boolean' | 'date' | 'json' | 'custom' | 'array';
   enumValues?: readonly string[];
+  minValue?: number | bigint;
+  maxValue?: number | bigint;
   maxLength?: number;
   precision?: number;
   scale?: number;

@@ -8,6 +8,14 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Fixed
 
+- An integer array element generated at the full default integer range because the canonical
+  element description dropped the column type's value range, so a structural default for
+  smallint[] produced values PostgreSQL rejects with "out of range for type smallint". Found
+  seeding MusicBrainz (#41), whose artist_release_group partitions carry two smallint[] columns.
+  Both element paths now carry the range - the 0.x wrapper array and the drizzle-orm 1.0.0
+  flattened column - and the structural default generates within it, exactly as it already did
+  for the scalar column.
+
 - drizzle-orm 1.0.0 widened `Column.dataType` from a single token to a space-separated compound
   ("object date", "string uuid"), which crashed structural defaults and sequence counters with
   `TypeError: factories[column.jsType] is not a function`. The adapter now normalizes the

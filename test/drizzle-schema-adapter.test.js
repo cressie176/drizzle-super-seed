@@ -521,6 +521,8 @@ describe('drizzle schema adapter', () => {
       big: bigint('big', { mode: 'number' }),
       bigger: bigint('bigger', { mode: 'bigint' }),
       description: text('description'),
+      smalls: smallint('smalls').array(),
+      descriptions: text('descriptions').array(),
     });
 
     const largestValueOf = (propertyName) =>
@@ -540,6 +542,19 @@ describe('drizzle schema adapter', () => {
 
     it('records no largest value for a column which is not an integer', () => {
       eq(largestValueOf('description'), undefined);
+    });
+
+    const elementOf = (propertyName) =>
+      extractCanonicalSchema({ rangeProbe })
+        .tables.get('rangeProbe')
+        .columns.find((column) => column.propertyName === propertyName).element;
+
+    it('records the largest value an integer array element holds', () => {
+      eq(elementOf('smalls').maxValue, 32_767);
+    });
+
+    it('records no largest value for an array element which is not an integer', () => {
+      eq(elementOf('descriptions').maxValue, undefined);
     });
   });
 
