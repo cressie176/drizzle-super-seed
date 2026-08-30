@@ -177,7 +177,7 @@ describe('generation rules', () => {
     const planDeliveries = (overrides) => planFor(deliveryRules(overrides), { deliveries: 1 }, { deliveries });
 
     it('refuses a structural default for a column a check mentions, naming the constraint', () => {
-      throws(() => planDeliveries(), {
+      throws(() => planDeliveries({ sent: 1, total: 2 }), {
         name: 'CheckConstrainedColumnRuleRequiredError',
         table: 'deliveries',
         column: 'state',
@@ -186,19 +186,19 @@ describe('generation rules', () => {
     });
 
     it('quotes the predicate, so the rule to write is visible in the message', () => {
-      throws(() => planDeliveries(), {
+      throws(() => planDeliveries({ sent: 1, total: 2 }), {
         message: /state IN \('queued', 'sent'\)/,
       });
     });
 
-    it('refuses every column a check relates, not only the first', () => {
-      throws(() => planDeliveries({ state: 'queued' }), {
-        column: 'sent',
-        constraint: 'sent_within_total',
-      });
-      throws(() => planDeliveries({ state: 'queued', sent: 1 }), {
-        column: 'total',
-        constraint: 'sent_within_total',
+    it('refuses every column a check relates, in the same pass', () => {
+      throws(() => planDeliveries({ state: 'queued' }), ({ name, refusals }) => {
+        eq(name, 'GenerationPlanRefusalsError');
+        deq(
+          refusals.map(({ column }) => column),
+          ['sent', 'total'],
+        );
+        return true;
       });
     });
 
@@ -206,6 +206,123 @@ describe('generation rules', () => {
       const plan = planDeliveries({ state: 'queued', sent: 1, total: 2 });
 
       eq(entryFor(plan, 'deliveries', 'note').source, PlanSource.StructuralDefault);
+    });
+  });
+
+  describe('refusals reported in one pass', () => {
+    const suppliers = pgTable(
+      'suppliers',
+      {
+        id: integer('id').primaryKey(),
+        rating: integer('rating'),
+      },
+      (table) => [check('rating_range', sql`${table.rating} BETWEEN 1 AND 5`)],
+    );
+
+    const shipments = pgTable(
+      'shipments',
+      {
+        id: integer('id').primaryKey(),
+        weight: integer('weight'),
+        note: text('note'),
+      },
+      (table) => [check('weight_positive', sql`${table.weight} > 0`)],
+    );
+
+    const planBoth = (rules) => planFor(rules, { suppliers: 1, shipments: 1 }, { suppliers, shipments });
+
+    const structuralRules = {
+      suppliers: { id: structuralDefault, rating: structuralDefault },
+      shipments: { id: structuralDefault, weight: structuralDefault, note: structuralDefault },
+    };
+
+    it('collects every refusal across every table before throwing', () => {
+      throws(() => planBoth(structuralRules), ({ name, refusals }) => {
+        eq(name, 'GenerationPlanRefusalsError');
+        deq(
+          refusals.map(({ table, column }) => `${table}.${column}`),
+          ['suppliers.rating', 'shipments.weight'],
+        );
+        return true;
+      });
+    });
+
+    it('keeps each refusal as the error it would have been alone', () => {
+      throws(() => planBoth(structuralRules), ({ refusals }) => {
+        deq(
+          refusals.map(({ name }) => name),
+          ['CheckConstrainedColumnRuleRequiredError', 'CheckConstrainedColumnRuleRequiredError'],
+        );
+        return true;
+      });
+    });
+
+    it('groups the message by table, keeping each refusal message intact', () => {
+      throws(() => planBoth(structuralRules), ({ message }) => {
+        ok(/2 refusals across 2 tables/.test(message), message);
+        ok(/suppliers:\n- Column suppliers\.rating is constrained by the check rating_range/.test(message), message);
+        ok(/shipments:\n- Column shipments\.weight is constrained by the check weight_positive/.test(message), message);
+        return true;
+      });
+    });
+
+    it('collects refusals of different classes together', () => {
+      throws(
+        () =>
+          planBoth({
+            suppliers: { id: structuralDefault, rating: structuralDefault },
+            shipments: { id: structuralDefault, weight: 10 },
+          }),
+        ({ refusals }) => {
+          deq(
+            refusals.map(({ name }) => name),
+            ['CheckConstrainedColumnRuleRequiredError', 'MissingColumnRuleError'],
+          );
+          return true;
+        },
+      );
+    });
+
+    it('throws a lone refusal as itself, so a single problem keeps its contract', () => {
+      throws(() => planBoth({ ...structuralRules, suppliers: { id: structuralDefault, rating: 3 } }), {
+        name: 'CheckConstrainedColumnRuleRequiredError',
+        table: 'shipments',
+        column: 'weight',
+      });
+    });
+
+    it('reports one refusal per constraint when a check refuses several foreign keys', () => {
+      const nodes = pgTable('nodes', { id: integer('id').primaryKey() });
+      const edges = pgTable(
+        'edges',
+        {
+          id: integer('id').primaryKey(),
+          source: integer('source')
+            .notNull()
+            .references(() => nodes.id),
+          target: integer('target')
+            .notNull()
+            .references(() => nodes.id),
+        },
+        (table) => [check('no_self_edge', sql`${table.source} <> ${table.target}`)],
+      );
+
+      throws(
+        () =>
+          planFor(
+            {
+              nodes: { id: structuralDefault },
+              edges: { id: structuralDefault, source: structuralDefault, target: structuralDefault },
+            },
+            { nodes: 1, edges: 1 },
+            { nodes, edges },
+          ),
+        {
+          name: 'CheckConstrainedForeignKeyRuleRequiredError',
+          constraint: 'no_self_edge',
+          columns: ['source', 'target'],
+        },
+      );
     });
   });
 
@@ -245,10 +362,13 @@ describe('generation rules', () => {
     });
 
     it('names every foreign key the check relates, so the rules can keep them valid together', () => {
-      throws(() => planRelationships(), ({ columns }) => {
-        deq(columns, ['entity0', 'entity1']);
-        return true;
-      });
+      throws(
+        () => planRelationships(),
+        ({ columns }) => {
+          deq(columns, ['entity0', 'entity1']);
+          return true;
+        },
+      );
     });
 
     it('refuses each foreign key the check names, not only the first', () => {
