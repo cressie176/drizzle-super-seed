@@ -883,13 +883,16 @@ in a way no database can detect.
 
 ## Comparison with drizzle-seed
 
-[drizzle-seed](https://github.com/drizzle-team/drizzle-orm/tree/main/drizzle-seed) generates shaped data from a Drizzle schema and works well for modest volumes inserted directly into a live database. drizzle-super-seed is intended for cases where you also need:
+[drizzle-seed](https://github.com/drizzle-team/drizzle-orm/tree/main/drizzle-seed) generates shaped data from a Drizzle schema and inserts it into a live database. For tests that need tens or hundreds of rows, it is adequate, and you may not need this library at all.
+
+The difference appears when you need volume, and the case for volume comes from the query planner. A planner's decisions depend on row counts and statistics: against a few hundred rows a sequential scan beats any index and `EXPLAIN` says nothing about how the same query behaves in production, so checking query plans means populating a database at something like production scale, repeatedly, inside a test suite. Loading at that scale through batched inserts is the bottleneck. In informal testing, PostgreSQL `COPY` was roughly four times faster per row than direct inserts, before batching and temporarily disabling constraint checks widened the difference, and before [UNLOGGED tables](#createpostgressqlfilesink-bulk-load) removed write-ahead logging from the load entirely. SQL file support in drizzle-seed is [tracked upstream](https://github.com/drizzle-team/drizzle-orm/issues/4133).
+
+Because drizzle-super-seed decouples generation from output, the same rules also give you:
 
 - in-memory data for unit tests which do not use a database
 - SQL files or streams for high-volume bulk loads
+- CSV for spreadsheets, ETL, or any loader that speaks it
 - compile-time and runtime checks requiring every schema change to be acknowledged by the generation rules
-
-In informal testing, PostgreSQL `COPY` was roughly four times faster per row than direct inserts before batching and temporarily disabling constraint checks widened the difference. SQL file support in drizzle-seed is [tracked upstream](https://github.com/drizzle-team/drizzle-orm/issues/4133).
 
 ## Use with drizzle-explain
 

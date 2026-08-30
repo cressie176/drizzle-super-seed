@@ -44,6 +44,13 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   (examples:sinks:image, examples:real-world:image and friends); the umbrella examples:test and
   examples:image gates are unchanged for local use.
 
+- The README's drizzle-seed comparison now leads with the honest boundary and the reason to
+  cross it: for tens or hundreds of rows drizzle-seed is adequate, and the case for more is
+  the query planner, whose decisions depend on row counts and statistics that fixture-sized
+  data cannot exercise. Checking explain plans means populating a database at production
+  scale, repeatedly, inside a test suite, which is where batched inserts become the
+  bottleneck and the decoupled sinks earn their place.
+
 - CI runs the real-world examples as one job per database - Pagila, AdventureWorks,
   MusicBrainz, LobeChat, Bangumi - with fail-fast off (#57). They fetch pinned upstream
   schemas over the network, pull third-party images and bake Postgres images, so a failure now
