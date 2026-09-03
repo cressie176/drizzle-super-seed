@@ -8,6 +8,14 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Added
 
+- Every file sink's `manifest.json` now carries a `contentHash` over the payload files it
+  lists (#65): a `sha256:` digest folded over the per-file digests in manifest order, which is
+  exactly what `sha256sum $(jq -r '.files[]' manifest.json) | sha256sum` prints, so a consumer
+  can check the key rather than trust it. It gives downstream tooling a ready-made cache key
+  for whatever is built from the directory, a seeded image for instance, without reading the
+  files back. The manifest is excluded because it carries the answer, and the orchestrator
+  because it is derivable from the file list.
+
 - `examples/real-world/musicbrainz` seeds the MusicBrainz schema at its full 372-table scale:
   770 foreign keys, 663 CHECK constraints, 226 unique indexes, LIST partitions seeded directly
   through their pull-invisible parents, an ICU collation and a cube column, baked into a

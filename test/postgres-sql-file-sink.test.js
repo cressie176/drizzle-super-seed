@@ -1,10 +1,11 @@
 const { describe, it, before, after } = require('node:test');
-const { deepEqual: deq, equal: eq, match, ok, rejects } = require('node:assert');
+const { deepEqual: deq, equal: eq, match, notEqual: notEq, ok, rejects } = require('node:assert');
 const { mkdtemp, readFile, readdir, rm, writeFile } = require('node:fs/promises');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const { TriggerHandling, createPostgresSqlFileSink, generate } = require('../lib');
 const { structuralParkRules } = require('./lib/park-rules');
+const { sha256Sum } = require('./lib/sha256-sum');
 const parkSchema = require('./lib/park-schema');
 
 const SEED = 42;
@@ -216,6 +217,22 @@ describe('postgres sql file sink', () => {
         .map((line) => line.slice('\\ir '.length));
 
       deq(manifest.files, included);
+    });
+
+    it('records a content hash over the payload files it lists', async () => {
+      const manifest = JSON.parse(await read(directory, 'manifest.json'));
+
+      match(manifest.contentHash, /^sha256:[0-9a-f]{64}$/);
+      eq(manifest.contentHash, await sha256Sum(directory, manifest.files));
+    });
+
+    it('changes the content hash when the data changes', async () => {
+      const other = await temporaryDirectory();
+      await generateInto(other, { seed: SEED + 1 });
+      const { contentHash } = JSON.parse(await read(directory, 'manifest.json'));
+
+      notEq(JSON.parse(await read(other, 'manifest.json')).contentHash, contentHash);
+      await rm(other, { recursive: true, force: true });
     });
 
     it('reports the same counts as the generation report', async () => {
