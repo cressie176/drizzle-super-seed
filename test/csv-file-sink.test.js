@@ -8,6 +8,7 @@ const { boolean, integer, pgTable, timestamp, varchar } = require('drizzle-orm/p
 const { createCsvFileSink, createInMemoryGraphSink, derive, generate, structuralDefault } = require('../lib');
 
 const SEED = 5;
+const REFERENCE_DATE = new Date('2024-06-01T00:00:00.000Z');
 
 const parks = pgTable('parks', {
   id: integer('id').primaryKey(),
@@ -44,7 +45,13 @@ describe('the csv file sink', () => {
 
   const generateCsv = (options = {}) =>
     generate(
-      { schema: { parks, pitches }, rules, counts: { parks: 2, pitches: 3 }, seed: SEED },
+      {
+        schema: { parks, pitches },
+        rules,
+        counts: { parks: 2, pitches: 3 },
+        seed: SEED,
+        referenceDate: REFERENCE_DATE,
+      },
       createCsvFileSink({ directory, ...options }),
     );
 
@@ -86,7 +93,27 @@ describe('the csv file sink', () => {
     deq(recorded.files, ['seed-0010_parks.csv', 'seed-0020_pitches.csv']);
     eq(recorded.header, true);
     eq(recorded.nullToken, '');
-    ok(typeof recorded.durationMs === 'number');
+  });
+
+  it('records nothing in the manifest which varies between runs of the same inputs', async () => {
+    await generateCsv();
+    const again = await mkdtemp(join(tmpdir(), 'drizzle-super-seed-'));
+    await generate(
+      {
+        schema: { parks, pitches },
+        rules,
+        counts: { parks: 2, pitches: 3 },
+        seed: SEED,
+        referenceDate: REFERENCE_DATE,
+      },
+      createCsvFileSink({ directory: again }),
+    );
+    const files = (await readdir(directory)).sort();
+
+    deq((await readdir(again)).sort(), files);
+    for (const file of files) {
+      eq(await readFile(join(again, file), 'utf8'), await readFile(join(directory, file), 'utf8'), `${file} differs`);
+    }
   });
 
   it('accepts any dialect, because csv has none', async () => {
