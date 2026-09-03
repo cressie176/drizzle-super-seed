@@ -6,6 +6,7 @@ const { join } = require('node:path');
 const { int, mysqlTable, varchar: mysqlVarchar } = require('drizzle-orm/mysql-core');
 const { boolean, integer, pgTable, timestamp, varchar } = require('drizzle-orm/pg-core');
 const { createCsvFileSink, createInMemoryGraphSink, derive, generate, structuralDefault } = require('../lib');
+const { sha256Sum } = require('./lib/sha256-sum');
 
 const SEED = 5;
 const REFERENCE_DATE = new Date('2024-06-01T00:00:00.000Z');
@@ -93,6 +94,14 @@ describe('the csv file sink', () => {
     deq(recorded.files, ['seed-0010_parks.csv', 'seed-0020_pitches.csv']);
     eq(recorded.header, true);
     eq(recorded.nullToken, '');
+  });
+
+  it('records a content hash over the payload files it lists', async () => {
+    await generateCsv();
+    const recorded = JSON.parse(await readFile(join(directory, 'manifest.json'), 'utf8'));
+
+    match(recorded.contentHash, /^sha256:[0-9a-f]{64}$/);
+    eq(recorded.contentHash, await sha256Sum(directory, recorded.files));
   });
 
   it('records nothing in the manifest which varies between runs of the same inputs', async () => {

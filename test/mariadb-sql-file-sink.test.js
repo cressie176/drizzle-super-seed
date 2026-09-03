@@ -8,6 +8,7 @@ const { bigint, int, mysqlTable, varchar } = require('drizzle-orm/mysql-core');
 const { generate, structuralDefault } = require('../lib');
 const { createMariaDbSqlFileSink } = require('../lib/mariadb/mariadb-sql-file-sink');
 const mariaDbSchema = require('./lib/park-schema-mariadb');
+const { sha256Sum } = require('./lib/sha256-sum');
 
 const SEED = 42;
 const REFERENCE_DATE = new Date('2024-06-01T00:00:00.000Z');
@@ -152,6 +153,13 @@ describe('mariadb sql file sink', () => {
       eq(manifest.referenceDate, REFERENCE_DATE.toISOString());
       deq(manifest.rowCounts, COUNTS);
       eq(manifest.rowsPerStatement, 1000);
+    });
+
+    it('records a content hash over the payload files it lists', async () => {
+      const manifest = JSON.parse(await read(directory, 'manifest.json'));
+
+      match(manifest.contentHash, /^sha256:[0-9a-f]{64}$/);
+      eq(manifest.contentHash, await sha256Sum(directory, manifest.files));
     });
 
     it('records nothing which varies between runs of the same inputs', async () => {
