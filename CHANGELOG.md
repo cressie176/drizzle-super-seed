@@ -4,7 +4,7 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-03
 
 ### Added
 
