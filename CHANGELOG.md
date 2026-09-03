@@ -21,6 +21,14 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 
 ### Changed
 
+- The file sinks' `manifest.json` no longer records `generatedAt` or `durationMs` (#65). Both
+  varied between runs, so identical inputs produced a byte-different manifest and the output
+  directory could not be content-addressed, cached on an input hash, or diffed against a
+  previous run to decide whether to regenerate. The payload files were already deterministic;
+  the manifest is now too, in all three file sinks, which makes the whole directory a pure
+  function of the inputs. Both facts remain on the returned `GenerationReport`, which is where
+  wall clock provenance belongs: a return value nobody hashes.
+
 - The README's drizzle-seed comparison now leads with the honest boundary and the reason to
   cross it: for tens or hundreds of rows drizzle-seed is adequate, and the case for more is
   the query planner, whose decisions depend on row counts and statistics that fixture-sized

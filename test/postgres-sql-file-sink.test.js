@@ -199,8 +199,13 @@ describe('postgres sql file sink', () => {
       eq(manifest.referenceDate, REFERENCE_DATE.toISOString());
       deq(manifest.rowCounts, COUNTS);
       eq(manifest.triggerHandling, TriggerHandling.DisableDuringLoad);
-      eq(typeof manifest.durationMs, 'number');
-      match(manifest.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('records nothing which varies between runs of the same inputs', async () => {
+      const manifest = JSON.parse(await read(directory, 'manifest.json'));
+
+      eq(manifest.generatedAt, undefined);
+      eq(manifest.durationMs, undefined);
     });
 
     it('lists every file the orchestrator loads', async () => {
@@ -259,14 +264,15 @@ describe('postgres sql file sink', () => {
   });
 
   describe('reproducibility', () => {
-    it('writes byte identical files for the same seed and reference date', async () => {
+    it('writes byte identical files for the same seed and reference date, the manifest included', async () => {
       const again = await temporaryDirectory();
       await generateInto(again);
+      const files = (await readdir(directory)).sort();
 
-      for (const file of (await readdir(directory)).filter((each) => each.endsWith('.sql'))) {
+      deq((await readdir(again)).sort(), files);
+      for (const file of files) {
         eq(await read(again, file), await read(directory, file), `${file} differs`);
       }
-      eq(await read(again, 'load.psql'), await read(directory, 'load.psql'));
       await rm(again, { recursive: true, force: true });
     });
 

@@ -152,7 +152,13 @@ describe('mariadb sql file sink', () => {
       eq(manifest.referenceDate, REFERENCE_DATE.toISOString());
       deq(manifest.rowCounts, COUNTS);
       eq(manifest.rowsPerStatement, 1000);
-      match(manifest.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('records nothing which varies between runs of the same inputs', async () => {
+      const manifest = JSON.parse(await read(directory, 'manifest.json'));
+
+      eq(manifest.generatedAt, undefined);
+      eq(manifest.durationMs, undefined);
     });
   });
 
@@ -169,11 +175,13 @@ describe('mariadb sql file sink', () => {
   });
 
   describe('reproducibility', () => {
-    it('writes byte identical files for the same seed and reference date', async () => {
+    it('writes byte identical files for the same seed and reference date, the manifest included', async () => {
       const again = await temporaryDirectory();
       await generateInto(again);
+      const files = (await readdir(directory)).sort();
 
-      for (const file of NUMBERED) eq(await read(again, file), await read(directory, file), `${file} differs`);
+      deq((await readdir(again)).sort(), files);
+      for (const file of files) eq(await read(again, file), await read(directory, file), `${file} differs`);
       await rm(again, { recursive: true, force: true });
     });
   });
