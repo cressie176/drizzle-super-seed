@@ -4,7 +4,7 @@ All notable changes to drizzle-super-seed are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.0-rc.0] - 2026-09-03
 
 ### Added
 
@@ -96,6 +96,10 @@ All notable changes to drizzle-super-seed are documented here. The format follow
   Both element paths now carry the range - the 0.x wrapper array and the drizzle-orm 1.0.0
   flattened column - and the structural default generates within it, exactly as it already did
   for the scalar column.
+
+## [0.3.0-rc.1] - 2026-08-28
+
+### Fixed
 
 - drizzle-orm 1.0.0 widened `Column.dataType` from a single token to a space-separated compound
   ("object date", "string uuid"), which crashed structural defaults and sequence counters with
